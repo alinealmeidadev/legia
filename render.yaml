@@ -42,4 +42,3 @@ databases:
   - name: legia-redis
     plan: free
     region: oregon
-    maxmemoryPolicy: allkeys-lru
