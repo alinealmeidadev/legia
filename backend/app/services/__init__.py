@@ -1,0 +1,3 @@
+"""
+LEGIA PLATFORM - Services Package
+"""
