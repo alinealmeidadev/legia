@@ -86,6 +86,59 @@ async def startup_event():
     print(f"🔑 Autenticação: JWT Bearer Token")
     print("=" * 60)
 
+    # Auto-inicialização do banco de dados (primeira vez)
+    try:
+        from app.db.base import Base
+        from app.db.session import engine, SessionLocal
+        from app.models.public.legia_user import LegiaUser
+        from app.core.security import get_password_hash
+        from sqlalchemy import inspect
+
+        print("\n🔍 Verificando banco de dados...")
+
+        # Verificar se tabelas existem
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+
+        if not tables or 'legia_users' not in tables:
+            print("📦 Criando tabelas do banco de dados...")
+            Base.metadata.create_all(bind=engine)
+            print("✅ Tabelas criadas com sucesso!")
+        else:
+            print("✅ Tabelas já existem")
+
+        # Verificar se existe admin
+        db = SessionLocal()
+        try:
+            admin_exists = db.query(LegiaUser).filter(
+                LegiaUser.email == "admin@legia.com"
+            ).first()
+
+            if not admin_exists:
+                print("👤 Criando usuário administrador...")
+                admin = LegiaUser(
+                    email="admin@legia.com",
+                    full_name="Administrador LEGIA",
+                    hashed_password=get_password_hash("Admin@123"),
+                    role="platform_admin",
+                    is_active=True,
+                    is_verified=True
+                )
+                db.add(admin)
+                db.commit()
+                print("✅ Admin criado: admin@legia.com / Admin@123")
+                print("⚠️  IMPORTANTE: Troque a senha após o primeiro login!")
+            else:
+                print("✅ Usuário admin já existe")
+        finally:
+            db.close()
+
+        print("🎉 Sistema inicializado e pronto para uso!\n")
+
+    except Exception as e:
+        print(f"⚠️  Erro na inicialização automática: {e}")
+        print("💡 O sistema vai continuar, mas pode precisar de setup manual")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
