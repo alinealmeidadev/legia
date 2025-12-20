@@ -64,17 +64,22 @@ Agora o frontend no Vercel vai se conectar corretamente ao backend no Render!
 
 ### Backend (Render)
 - ✅ Push realizado: 00:00
-- ⏳ **Deploy em andamento** (5-10 minutos)
+- ⏳ **Deploy em andamento** (pode demorar 10-15 min no free tier)
 - 🔗 URL: https://legia-backend.onrender.com
 - 📝 Quando terminar: Admin será criado automaticamente na inicialização
+- ⏰ **Última verificação:** 00:15 - Ainda em deploy (503 Service Unavailable)
 
 ### Frontend (Vercel)
 - ✅ Push realizado: 00:05
-- ⏳ **Deploy em andamento** (2-5 minutos)
+- ⏳ **Deploy em andamento** (2-5 minutos, provavelmente já terminou)
 - 🔗 URLs:
   - https://legia-git-main-aline-almeidas-projects.vercel.app
   - https://legia-ijim8f6ur-aline-almeidas-projects.vercel.app
 - 📝 Quando terminar: Frontend vai conectar no backend correto
+
+### ⚠️ IMPORTANTE
+O Render free tier pode demorar 10-15 minutos para fazer deploy. É normal!
+Quando você acordar (em algumas horas), certamente já vai estar pronto.
 
 ---
 
