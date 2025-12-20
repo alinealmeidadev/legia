@@ -42,9 +42,9 @@ def initialize_platform(db: Session = Depends(get_db)):
         # Criar admin
         admin = LegiaUser(
             email="admin@legia.com",
-            full_name="Administrador LEGIA",
-            hashed_password=get_password_hash("Admin@123"),
-            role="platform_admin",
+            name="Administrador LEGIA",
+            password_hash=get_password_hash("Admin@123"),
+            role="superadmin",
             is_active=True,
             is_verified=True
         )
