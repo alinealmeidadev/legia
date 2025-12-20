@@ -3,11 +3,18 @@ LEGIA PLATFORM - Roteador Principal API v1
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, tenants, clients, processes, agents, contracts, workflows
+from app.api.v1.endpoints import auth, tenants, clients, processes, agents, contracts, workflows, setup
 
 
 # Criar roteador principal
 api_router = APIRouter()
+
+# Incluir rotas de setup inicial (TEMPORÁRIO - remover após uso)
+api_router.include_router(
+    setup.router,
+    prefix="/setup",
+    tags=["Setup Inicial (TEMPORÁRIO)"]
+)
 
 # Incluir rotas de autenticação
 api_router.include_router(
