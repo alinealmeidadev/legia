@@ -5,8 +5,9 @@ Este endpoint deve ser REMOVIDO após criar o primeiro admin!
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.deps import get_db
-from app.core.database import Base, engine
-from app.models.user import LegiaUser
+from app.db.base import Base
+from app.db.session import engine
+from app.models.public.legia_user import LegiaUser
 from app.core.security import get_password_hash
 
 router = APIRouter()

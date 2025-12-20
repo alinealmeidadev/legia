@@ -6,8 +6,9 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app.core.database import Base, engine, SessionLocal
-from app.models.user import LegiaUser
+from app.db.base import Base
+from app.db.session import engine, SessionLocal
+from app.models.public.legia_user import LegiaUser
 from app.core.security import get_password_hash
 from sqlalchemy.exc import IntegrityError
 
