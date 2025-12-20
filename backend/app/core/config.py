@@ -38,14 +38,28 @@ class Settings(BaseSettings):
     ASAAS_BASE_URL: str = "https://sandbox.asaas.com/api/v3"
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000,https://legia-git-main-aline-almeidas-projects.vercel.app,https://legia-aline-almeidas-projects.vercel.app,https://legia.vercel.app,https://*.vercel.app"
 
     @property
     def cors_origins_list(self) -> List[str]:
         """Retorna CORS_ORIGINS como lista"""
+        origins = []
         if isinstance(self.CORS_ORIGINS, str):
-            return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
-        return self.CORS_ORIGINS if isinstance(self.CORS_ORIGINS, list) else []
+            origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        elif isinstance(self.CORS_ORIGINS, list):
+            origins = self.CORS_ORIGINS
+
+        # Adicionar origens padrão do Vercel se não estiverem presentes
+        vercel_origins = [
+            "https://legia-git-main-aline-almeidas-projects.vercel.app",
+            "https://legia-aline-almeidas-projects.vercel.app",
+            "https://legia.vercel.app"
+        ]
+        for origin in vercel_origins:
+            if origin not in origins:
+                origins.append(origin)
+
+        return origins
 
     # Upload
     MAX_UPLOAD_SIZE_MB: int = 10
