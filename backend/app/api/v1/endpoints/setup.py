@@ -88,3 +88,38 @@ def check_setup_status(db: Session = Depends(get_db)):
             "error": "Banco de dados ainda não inicializado",
             "detail": str(e)
         }
+
+
+@router.post("/run-seeds")
+def run_seeds_endpoint(db: Session = Depends(get_db)):
+    """
+    🚨 ENDPOINT TEMPORÁRIO - Executa seeds de dados iniciais
+    Cria planos, tenants e usuários de exemplo
+    """
+    from app.db.seeds import seed_plans, seed_tenants
+
+    try:
+        seed_plans(db)
+        seed_tenants(db)
+
+        return {
+            "status": "success",
+            "message": "Seeds executados com sucesso!",
+            "tenants": [
+                {
+                    "name": "Escritório ABC Contabilidade",
+                    "tenant_id": 1,
+                    "email": "admin@abc.com",
+                    "password": "admin123"
+                },
+                {
+                    "name": "Escritório XYZ Assessoria",
+                    "tenant_id": 2,
+                    "email": "admin@xyz.com",
+                    "password": "admin123"
+                }
+            ]
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao executar seeds: {str(e)}")
