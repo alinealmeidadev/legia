@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from app.core.deps import get_db, get_current_tenant_user
 from app.models.public.tenant import Tenant
