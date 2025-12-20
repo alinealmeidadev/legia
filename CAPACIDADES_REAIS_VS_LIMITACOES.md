@@ -1,6 +1,6 @@
 # CAPACIDADES REAIS vs LIMITAÇÕES - SISTEMA LEGIA
 
-**Data:** 19/12/2024
+**Data:** 19/12/2025
 **Versão:** 1.0 - Análise Realista
 **Status:** Documento de Transparência Técnica
 

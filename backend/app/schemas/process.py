@@ -14,6 +14,7 @@ class ProcessBase(BaseModel):
     description: Optional[str] = Field(None, description="Descrição detalhada")
     priority: Optional[str] = Field("normal", description="Prioridade: baixa, normal, alta")
     estimated_days: Optional[int] = Field(30, ge=1, description="Prazo estimado em dias")
+    alteration_types: Optional[List[str]] = Field(None, description="Lista de alterações: ['endereco', 'socios', 'capital', 'atividade']")
 
 
 class ProcessCreate(ProcessBase):
@@ -35,6 +36,7 @@ class ProcessUpdate(BaseModel):
     priority: Optional[str] = Field(None, description="Prioridade: baixa, normal, alta")
     estimated_days: Optional[int] = Field(None, ge=1)
     assigned_to: Optional[int] = None
+    alteration_types: Optional[List[str]] = None
 
 
 class ProcessResponse(BaseModel):
@@ -51,6 +53,7 @@ class ProcessResponse(BaseModel):
     estimated_days: int
     assigned_to: Optional[int] = None
     created_by: Optional[int] = None
+    alteration_types: Optional[List[str]] = None
     created_at: datetime
     updated_at: datetime
     started_at: Optional[datetime] = None

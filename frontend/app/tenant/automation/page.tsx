@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { AlterationModal } from '@/components/alteration-modal'
 import {
   Rocket,
   MapPin,
@@ -22,36 +23,16 @@ export default function AutomationPage() {
   const [workflow, setWorkflow] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showAlterationModal, setShowAlterationModal] = useState(false)
 
   // Tipos de processo disponíveis
   const processTypes = [
     {
-      id: 'alteracao_endereco',
-      nome: 'Alteração de Endereço',
-      descricao: 'Mudar o endereço da sede da empresa',
-      icon: MapPin,
-      color: 'bg-blue-500'
-    },
-    {
-      id: 'alteracao_socios',
-      nome: 'Alteração de Sócios',
-      descricao: 'Incluir, excluir ou alterar sócios',
+      id: 'alteracao',
+      nome: 'Alteração Contratual',
+      descricao: 'Alterações diversas no contrato social',
       icon: Users,
       color: 'bg-green-500'
-    },
-    {
-      id: 'alteracao_capital',
-      nome: 'Alteração de Capital',
-      descricao: 'Aumentar ou reduzir capital social',
-      icon: DollarSign,
-      color: 'bg-yellow-500'
-    },
-    {
-      id: 'alteracao_atividade',
-      nome: 'Alteração de Atividade',
-      descricao: 'Incluir ou excluir CNAEs',
-      icon: Briefcase,
-      color: 'bg-purple-500'
     },
     {
       id: 'abertura_empresa',
@@ -62,7 +43,20 @@ export default function AutomationPage() {
     }
   ]
 
-  const startAutomation = async (processType: string) => {
+  const handleProcessTypeClick = (processType: string) => {
+    if (processType === 'alteracao') {
+      setShowAlterationModal(true)
+    } else {
+      startAutomation(processType, [])
+    }
+  }
+
+  const handleAlterationConfirm = (selectedTypes: string[]) => {
+    setShowAlterationModal(false)
+    startAutomation('alteracao', selectedTypes)
+  }
+
+  const startAutomation = async (processType: string, alterationTypes: string[]) => {
     try {
       setLoading(true)
       setError('')
@@ -71,7 +65,9 @@ export default function AutomationPage() {
       const response = await api.post('/workflows/', {
         workflow_type: processType,
         client_id: 1, // Por enquanto usando ID fixo
-        initial_data: {}
+        initial_data: {
+          alteration_types: alterationTypes.length > 0 ? alterationTypes : undefined
+        }
       })
 
       setWorkflow(response.data)
@@ -231,16 +227,23 @@ export default function AutomationPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Rocket className="h-8 w-8 text-primary" />
-          Automação de Processos
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Inicie um processo totalmente automatizado. Os agentes trabalharão juntos para completar tudo!
-        </p>
-      </div>
+    <>
+      <AlterationModal
+        open={showAlterationModal}
+        onClose={() => setShowAlterationModal(false)}
+        onConfirm={handleAlterationConfirm}
+      />
+
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Rocket className="h-8 w-8 text-primary" />
+            Automação de Processos
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Inicie um processo totalmente automatizado. Os agentes trabalharão juntos para completar tudo!
+          </p>
+        </div>
 
       {error && (
         <Card className="border-red-200 bg-red-50">
@@ -258,7 +261,7 @@ export default function AutomationPage() {
             <Card
               key={type.id}
               className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-              onClick={() => !loading && startAutomation(type.id)}
+              onClick={() => !loading && handleProcessTypeClick(type.id)}
             >
               <CardHeader>
                 <div className={`w-12 h-12 rounded-lg ${type.color} flex items-center justify-center mb-3`}>
@@ -322,6 +325,7 @@ export default function AutomationPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   )
 }

@@ -26,7 +26,6 @@ celery==5.3.6
 
 # HTTP Client
 httpx==0.26.0
-aiohttp==3.9.1
 
 # Google Gemini/ADK
 google-generativeai>=0.8.0
@@ -36,17 +35,11 @@ python-dotenv==1.0.0
 python-dateutil==2.8.2
 pytz==2023.3
 
-# Testing
-pytest==7.4.4
-pytest-asyncio==0.23.3
-pytest-cov==4.1.0
-faker==22.0.0
-
 # Logging e monitoring
 loguru==0.7.2
 
-# File handling
-python-magic==0.4.27
-Pillow==10.2.0
-openpyxl==3.1.5
-pandas==2.3.2
+# REMOVIDOS TEMPORARIAMENTE (causam erro no Render free):
+# aiohttp==3.9.1 (requer compilação C)
+# python-magic==0.4.27 (requer libmagic do sistema)
+# Pillow==10.2.0 (requer compilação pesada)
+# pytest/faker (não precisamos em produção)

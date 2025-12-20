@@ -42,6 +42,10 @@ class Process(Base):
     status = Column(String(50), nullable=False, default="aguardando", index=True,
                    comment="Status: aguardando, em_andamento, protocolado, concluido, cancelado")
 
+    # Alterações específicas (para processos de alteração contratual)
+    alteration_types = Column(JSON, nullable=True,
+                             comment="Lista de alterações solicitadas: ['endereco', 'socios', 'capital', 'atividade']")
+
     # Atribuição
     assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True,
                         comment="Usuário responsável")

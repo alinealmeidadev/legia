@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { ClientFormDialog } from '@/components/client-form-dialog'
 import { ClientEditDialog } from '@/components/client-edit-dialog'
+import { ImportExcelDialog } from '@/components/import-excel-dialog'
 import api from '@/lib/api'
 import { Users } from 'lucide-react'
 
@@ -104,7 +105,10 @@ export default function ClientsPage() {
             Gerenciar clientes do escritório
           </p>
         </div>
-        <ClientFormDialog onSuccess={loadClients} />
+        <div className="flex gap-2">
+          <ImportExcelDialog onSuccess={loadClients} />
+          <ClientFormDialog onSuccess={loadClients} />
+        </div>
       </div>
 
       {clients.length === 0 ? (

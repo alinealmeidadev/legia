@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus } from 'lucide-react'
+import { Plus, Search, Loader2 } from 'lucide-react'
 import api from '@/lib/api'
 import { useToast } from '@/components/ui/use-toast'
 
@@ -31,6 +31,9 @@ interface ClientFormDialogProps {
 export function ClientFormDialog({ onSuccess }: ClientFormDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [consultingCNPJ, setConsultingCNPJ] = useState(false)
+  const [consultingCEP, setConsultingCEP] = useState(false)
+  const [documentoValido, setDocumentoValido] = useState<boolean | null>(null)
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -159,9 +162,125 @@ export function ClientFormDialog({ onSuccess }: ClientFormDialogProps) {
     return value
   }
 
-  const handleDocumentChange = (value: string) => {
+  const handleDocumentChange = async (value: string) => {
     const formatted = formData.type === 'pf' ? formatCPF(value) : formatCNPJ(value)
     setFormData({ ...formData, document: formatted })
+
+    // Validar documento quando estiver completo
+    const docLimpo = formatted.replace(/\D/g, '')
+    const tamanhoEsperado = formData.type === 'pf' ? 11 : 14
+
+    if (docLimpo.length === tamanhoEsperado) {
+      try {
+        const response = await api.get(`/clients/utils/validar-documento/${docLimpo}`)
+        setDocumentoValido(response.data.valido)
+
+        if (!response.data.valido) {
+          toast({
+            variant: 'destructive',
+            title: `${formData.type === 'pf' ? 'CPF' : 'CNPJ'} inválido`,
+            description: 'Por favor, verifique o documento informado',
+          })
+        }
+      } catch (error) {
+        setDocumentoValido(null)
+      }
+    } else {
+      setDocumentoValido(null)
+    }
+  }
+
+  const consultarCNPJ = async () => {
+    if (formData.type !== 'pj') return
+
+    const cnpjLimpo = formData.document.replace(/\D/g, '')
+    if (cnpjLimpo.length !== 14) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'CNPJ deve conter 14 dígitos',
+      })
+      return
+    }
+
+    setConsultingCNPJ(true)
+
+    try {
+      const response = await api.get(`/clients/utils/consultar-cnpj/${cnpjLimpo}`)
+      const dados = response.data.data
+
+      // Preencher automaticamente os campos
+      setFormData({
+        ...formData,
+        name: dados.razao_social || formData.name,
+        company_name: dados.razao_social || formData.company_name,
+        trade_name: dados.nome_fantasia || formData.trade_name,
+        email: dados.email || formData.email,
+        phone: dados.telefone || formData.phone,
+        address_street: dados.logradouro || formData.address_street,
+        address_number: dados.numero || formData.address_number,
+        address_complement: dados.complemento || formData.address_complement,
+        address_neighborhood: dados.bairro || formData.address_neighborhood,
+        address_city: dados.municipio || formData.address_city,
+        address_state: dados.uf || formData.address_state,
+        address_zipcode: dados.cep ? formatCEP(dados.cep) : formData.address_zipcode,
+      })
+
+      toast({
+        title: 'Sucesso!',
+        description: 'Dados do CNPJ carregados automaticamente',
+      })
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao consultar CNPJ',
+        description: error.response?.data?.detail || 'Não foi possível consultar o CNPJ',
+      })
+    } finally {
+      setConsultingCNPJ(false)
+    }
+  }
+
+  const consultarCEP = async () => {
+    const cepLimpo = formData.address_zipcode.replace(/\D/g, '')
+    if (cepLimpo.length !== 8) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'CEP deve conter 8 dígitos',
+      })
+      return
+    }
+
+    setConsultingCEP(true)
+
+    try {
+      const response = await api.get(`/clients/utils/consultar-cep/${cepLimpo}`)
+      const dados = response.data.data
+
+      // Preencher automaticamente os campos
+      setFormData({
+        ...formData,
+        address_street: dados.logradouro || formData.address_street,
+        address_complement: dados.complemento || formData.address_complement,
+        address_neighborhood: dados.bairro || formData.address_neighborhood,
+        address_city: dados.localidade || formData.address_city,
+        address_state: dados.uf || formData.address_state,
+      })
+
+      toast({
+        title: 'Sucesso!',
+        description: 'Endereço carregado automaticamente',
+      })
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao consultar CEP',
+        description: error.response?.data?.detail || 'Não foi possível consultar o CEP',
+      })
+    } finally {
+      setConsultingCEP(false)
+    }
   }
 
   return (
@@ -225,16 +344,52 @@ export function ClientFormDialog({ onSuccess }: ClientFormDialogProps) {
                 <Label htmlFor="document">
                   {formData.type === 'pf' ? 'CPF *' : 'CNPJ *'}
                 </Label>
-                <Input
-                  id="document"
-                  required
-                  value={formData.document}
-                  onChange={(e) => handleDocumentChange(e.target.value)}
-                  placeholder={
-                    formData.type === 'pf' ? '000.000.000-00' : '00.000.000/0000-00'
-                  }
-                  maxLength={formData.type === 'pf' ? 14 : 18}
-                />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="document"
+                      required
+                      value={formData.document}
+                      onChange={(e) => handleDocumentChange(e.target.value)}
+                      placeholder={
+                        formData.type === 'pf' ? '000.000.000-00' : '00.000.000/0000-00'
+                      }
+                      maxLength={formData.type === 'pf' ? 14 : 18}
+                      className={
+                        documentoValido === false
+                          ? 'border-red-500 focus-visible:ring-red-500'
+                          : documentoValido === true
+                          ? 'border-green-500 focus-visible:ring-green-500'
+                          : ''
+                      }
+                    />
+                    {documentoValido !== null && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        {documentoValido ? (
+                          <span className="text-green-500 text-sm">✓</span>
+                        ) : (
+                          <span className="text-red-500 text-sm">✗</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {formData.type === 'pj' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={consultarCNPJ}
+                      disabled={consultingCNPJ || formData.document.replace(/\D/g, '').length !== 14 || documentoValido === false}
+                      title="Consultar CNPJ na Receita Federal"
+                    >
+                      {consultingCNPJ ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="grid gap-2">
@@ -449,18 +604,34 @@ export function ClientFormDialog({ onSuccess }: ClientFormDialogProps) {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="address_zipcode">CEP</Label>
-                    <Input
-                      id="address_zipcode"
-                      value={formData.address_zipcode}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          address_zipcode: formatCEP(e.target.value),
-                        })
-                      }
-                      placeholder="00000-000"
-                      maxLength={9}
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        id="address_zipcode"
+                        value={formData.address_zipcode}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            address_zipcode: formatCEP(e.target.value),
+                          })
+                        }
+                        placeholder="00000-000"
+                        maxLength={9}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={consultarCEP}
+                        disabled={consultingCEP || formData.address_zipcode.replace(/\D/g, '').length !== 8}
+                        title="Consultar CEP"
+                      >
+                        {consultingCEP ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Search className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -23,6 +23,8 @@ import {
 import { useToast } from '@/components/ui/use-toast'
 import api from '@/lib/api'
 import { Plus, Loader2 } from 'lucide-react'
+import { AlterationModal } from '@/components/alteration-modal'
+import { Badge } from '@/components/ui/badge'
 
 interface Client {
   id: number
@@ -34,6 +36,8 @@ export function ProcessFormDialog({ onSuccess }: { onSuccess: () => void }) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
+  const [showAlterationModal, setShowAlterationModal] = useState(false)
+  const [selectedAlterations, setSelectedAlterations] = useState<string[]>([])
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -60,8 +64,33 @@ export function ProcessFormDialog({ onSuccess }: { onSuccess: () => void }) {
     }
   }
 
+  const handleProcessTypeChange = (value: string) => {
+    setFormData({ ...formData, process_type: value })
+    if (value === 'alteracao') {
+      setShowAlterationModal(true)
+    } else {
+      setSelectedAlterations([])
+    }
+  }
+
+  const handleAlterationConfirm = (alterations: string[]) => {
+    setSelectedAlterations(alterations)
+    setShowAlterationModal(false)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (formData.process_type === 'alteracao' && selectedAlterations.length === 0) {
+      toast({
+        title: 'Atenção',
+        description: 'Selecione pelo menos uma alteração',
+        variant: 'destructive',
+      })
+      setShowAlterationModal(true)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -69,6 +98,7 @@ export function ProcessFormDialog({ onSuccess }: { onSuccess: () => void }) {
         ...formData,
         client_id: parseInt(formData.client_id),
         estimated_days: parseInt(formData.estimated_days),
+        alteration_types: formData.process_type === 'alteracao' ? selectedAlterations : undefined,
       })
 
       toast({
@@ -99,25 +129,43 @@ export function ProcessFormDialog({ onSuccess }: { onSuccess: () => void }) {
       priority: 'normal',
       estimated_days: '30',
     })
+    setSelectedAlterations([])
+  }
+
+  const getAlterationName = (id: string) => {
+    const names: Record<string, string> = {
+      'endereco': 'Endereço',
+      'socios': 'Sócios',
+      'capital': 'Capital',
+      'atividade': 'Atividade'
+    }
+    return names[id] || id
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Processo
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Novo Processo</DialogTitle>
-            <DialogDescription>
-              Crie um novo processo de legalização
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
+    <>
+      <AlterationModal
+        open={showAlterationModal}
+        onClose={() => setShowAlterationModal(false)}
+        onConfirm={handleAlterationConfirm}
+      />
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Processo
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[600px]">
+          <form onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle>Novo Processo</DialogTitle>
+              <DialogDescription>
+                Crie um novo processo de legalização
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
             {/* Cliente */}
             <div className="grid gap-2">
               <Label htmlFor="client_id">
@@ -148,9 +196,7 @@ export function ProcessFormDialog({ onSuccess }: { onSuccess: () => void }) {
               <Label htmlFor="process_type">Tipo de Processo *</Label>
               <Select
                 value={formData.process_type}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, process_type: value })
-                }
+                onValueChange={handleProcessTypeChange}
                 required
               >
                 <SelectTrigger>
@@ -163,6 +209,24 @@ export function ProcessFormDialog({ onSuccess }: { onSuccess: () => void }) {
                   <SelectItem value="encerramento">Encerramento</SelectItem>
                 </SelectContent>
               </Select>
+
+              {formData.process_type === 'alteracao' && selectedAlterations.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedAlterations.map(alt => (
+                    <Badge key={alt} variant="secondary">
+                      {getAlterationName(alt)}
+                    </Badge>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAlterationModal(true)}
+                  >
+                    Alterar Seleção
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Título */}
@@ -249,5 +313,6 @@ export function ProcessFormDialog({ onSuccess }: { onSuccess: () => void }) {
         </form>
       </DialogContent>
     </Dialog>
+    </>
   )
 }

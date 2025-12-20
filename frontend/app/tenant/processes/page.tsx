@@ -28,6 +28,7 @@ interface Process {
   priority: string
   estimated_days: number
   assigned_to?: number
+  alteration_types?: string[]
   created_at: string
   updated_at: string
   started_at?: string
@@ -116,6 +117,16 @@ export default function ProcessesPage() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR')
+  }
+
+  const getAlterationName = (id: string) => {
+    const names: Record<string, string> = {
+      'endereco': 'Endereço',
+      'socios': 'Sócios',
+      'capital': 'Capital',
+      'atividade': 'Atividade'
+    }
+    return names[id] || id
   }
 
   if (loading) {
@@ -239,6 +250,15 @@ export default function ProcessesPage() {
                         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                           {process.description}
                         </p>
+                      )}
+                      {process.process_type === 'alteracao' && process.alteration_types && process.alteration_types.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {process.alteration_types.map(alt => (
+                            <Badge key={alt} variant="outline" className="text-xs">
+                              {getAlterationName(alt)}
+                            </Badge>
+                          ))}
+                        </div>
                       )}
                       <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
