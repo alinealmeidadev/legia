@@ -20,9 +20,12 @@ def initialize_platform(db: Session = Depends(get_db)):
     Cria:
     1. Todas as tabelas no banco
     2. Usuário admin inicial
+    3. Planos e tenants de exemplo (se run_seeds=true)
 
     ⚠️ Este endpoint deve ser REMOVIDO após uso!
     """
+    from app.db.seeds import seed_plans, seed_tenants
+
     try:
         # Criar tabelas
         Base.metadata.create_all(bind=engine)
@@ -32,36 +35,63 @@ def initialize_platform(db: Session = Depends(get_db)):
             LegiaUser.email == "admin@legia.com"
         ).first()
 
-        if existing_admin:
+        seeds_executed = False
+        if not existing_admin:
+            # Criar admin
+            admin = LegiaUser(
+                email="admin@legia.com",
+                name="Administrador LEGIA",
+                password_hash=get_password_hash("Admin@123"),
+                role="superadmin",
+                is_active=True,
+                is_verified=True
+            )
+
+            db.add(admin)
+            db.commit()
+            db.refresh(admin)
+
+            # Executar seeds automaticamente
+            try:
+                seed_plans(db)
+                seed_tenants(db)
+                seeds_executed = True
+            except Exception as seed_error:
+                print(f"Aviso: Erro ao executar seeds: {seed_error}")
+
+            return {
+                "status": "success",
+                "message": "Plataforma inicializada com sucesso!",
+                "admin": {
+                    "email": "admin@legia.com",
+                    "password": "Admin@123"
+                },
+                "seeds_executed": seeds_executed,
+                "tenants": [
+                    {"email": "admin@abc.com", "password": "admin123", "tenant_id": 1},
+                    {"email": "admin@xyz.com", "password": "admin123", "tenant_id": 2}
+                ] if seeds_executed else [],
+                "warning": "⚠️ TROQUE TODAS AS SENHAS APÓS O LOGIN!"
+            }
+        else:
+            # Tentar executar seeds mesmo se admin já existe
+            try:
+                seed_plans(db)
+                seed_tenants(db)
+                seeds_executed = True
+            except Exception as seed_error:
+                print(f"Aviso: Erro ao executar seeds: {seed_error}")
+
             return {
                 "status": "already_initialized",
-                "message": "Plataforma já está inicializada",
-                "admin_email": "admin@legia.com"
+                "message": "Plataforma já está inicializada. Seeds executados.",
+                "admin_email": "admin@legia.com",
+                "seeds_executed": seeds_executed,
+                "tenants": [
+                    {"email": "admin@abc.com", "password": "admin123", "tenant_id": 1},
+                    {"email": "admin@xyz.com", "password": "admin123", "tenant_id": 2}
+                ] if seeds_executed else []
             }
-
-        # Criar admin
-        admin = LegiaUser(
-            email="admin@legia.com",
-            name="Administrador LEGIA",
-            password_hash=get_password_hash("Admin@123"),
-            role="superadmin",
-            is_active=True,
-            is_verified=True
-        )
-
-        db.add(admin)
-        db.commit()
-        db.refresh(admin)
-
-        return {
-            "status": "success",
-            "message": "Plataforma inicializada com sucesso!",
-            "admin": {
-                "email": "admin@legia.com",
-                "password": "Admin@123",
-                "warning": "⚠️ TROQUE A SENHA APÓS O PRIMEIRO LOGIN!"
-            }
-        }
 
     except Exception as e:
         db.rollback()
