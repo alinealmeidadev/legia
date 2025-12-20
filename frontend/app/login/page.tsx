@@ -111,8 +111,8 @@ export default function LoginPage() {
             </Button>
 
             <div className="text-xs text-center text-muted-foreground mt-4">
-              <p className="mb-1"><strong>Super Admin:</strong> admin@legia.com.br / admin123</p>
-              <p><strong>Tenant (ID 2):</strong> admin@xyz.com / admin123</p>
+              <p className="mb-1"><strong>Super Admin:</strong> admin@legia.com / Admin@123</p>
+              <p><strong>Tenant (ID 1):</strong> admin@abc.com / Admin@123</p>
             </div>
           </form>
         </CardContent>
