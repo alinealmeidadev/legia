@@ -6,11 +6,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ||
     ? 'http://localhost:8000'
     : 'https://legia-backend.onrender.com')
 
+// Log para debug (apenas em desenvolvimento)
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('API URL:', API_URL)
+}
+
 export const api = axios.create({
   baseURL: `${API_URL}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 })
 
 // Interceptor para adicionar token automaticamente
