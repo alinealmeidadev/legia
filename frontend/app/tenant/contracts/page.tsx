@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,12 +38,14 @@ interface ActDetails {
 }
 
 export default function ContractsPage() {
+  const router = useRouter()
   const [acts, setActs] = useState<Act[]>([])
   const [selectedAct, setSelectedAct] = useState<string | null>(null)
   const [actDetails, setActDetails] = useState<ActDetails | null>(null)
   const [loading, setLoading] = useState(false)
   const [showAlterationModal, setShowAlterationModal] = useState(false)
   const [selectedAlterations, setSelectedAlterations] = useState<string[]>([])
+  const [error, setError] = useState('')
 
   useEffect(() => {
     loadActs()
@@ -98,6 +101,67 @@ export default function ContractsPage() {
     }
   }
 
+  const handleCreateProcess = async () => {
+    if (selectedAlterations.length === 0) {
+      setError('Selecione pelo menos uma alteração')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+
+      // ETAPA 1: Criar processo
+      const alterationNames: Record<string, string> = {
+        'endereco': 'Endereço',
+        'socios': 'Sócios',
+        'capital': 'Capital Social',
+        'atividade': 'Atividade'
+      }
+
+      const processResponse = await api.post('/processes/', {
+        process_type: 'alteracao',
+        title: `Alteração Contratual - ${selectedAlterations.map(a => alterationNames[a]).join(', ')}`,
+        description: `Alterações solicitadas: ${selectedAlterations.map(a => alterationNames[a]).join(', ')}`,
+        client_id: 1,
+        alteration_types: selectedAlterations,
+        priority: 'normal',
+        status: 'aguardando'
+      })
+
+      // VALIDAÇÃO 1: Processo criado?
+      if (!processResponse?.data?.id) {
+        throw new Error('Falha ao criar processo - resposta inválida')
+      }
+
+      const processId = processResponse.data.id
+
+      // ETAPA 2: Criar workflow
+      const workflowResponse = await api.post('/workflows/', {
+        workflow_type: 'alteracao',
+        process_id: processId,
+        client_id: 1,
+        initial_data: {
+          alteration_types: selectedAlterations
+        }
+      })
+
+      // VALIDAÇÃO 2: Workflow criado?
+      if (!workflowResponse?.data?.id || !workflowResponse?.data?.stages) {
+        throw new Error('Falha ao criar automação - resposta inválida')
+      }
+
+      // ETAPA 3: Navegar
+      router.push(`/tenant/automation?workflow=${workflowResponse.data.id}`)
+
+    } catch (err: any) {
+      console.error('Erro ao criar processo:', err)
+      setError(err.response?.data?.detail || err.message || 'Erro ao criar processo')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getActIcon = (actId: string) => {
     const icons: Record<string, any> = {
       'alteracao_endereco': MapPin,
@@ -129,6 +193,14 @@ export default function ContractsPage() {
             Selecione o tipo de ato contratual que deseja elaborar
           </p>
         </div>
+
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <p className="text-red-600">{error}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {!selectedAct ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -259,8 +331,13 @@ export default function ContractsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" size="lg">
-                  Iniciar Novo Processo
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={handleCreateProcess}
+                  disabled={loading || selectedAlterations.length === 0}
+                >
+                  {loading ? 'Criando...' : 'Iniciar Novo Processo'}
                 </Button>
 
                 <Button className="w-full" variant="outline">

@@ -60,21 +60,62 @@ export default function AutomationPage() {
     try {
       setLoading(true)
       setError('')
+      setWorkflow(null)
 
-      // Criar workflow automatizado
-      const response = await api.post('/workflows/', {
+      // ETAPA 1: Criar processo PRIMEIRO
+      const alterationNames: Record<string, string> = {
+        'endereco': 'Endereço',
+        'socios': 'Sócios',
+        'capital': 'Capital Social',
+        'atividade': 'Atividade'
+      }
+
+      const processResponse = await api.post('/processes/', {
+        process_type: processType,
+        title: processType === 'alteracao'
+          ? `Alteração Contratual - ${alterationTypes.map(a => alterationNames[a] || a).join(', ')}`
+          : 'Abertura de Empresa',
+        client_id: 1,
+        alteration_types: alterationTypes.length > 0 ? alterationTypes : undefined,
+        priority: 'normal',
+        status: 'aguardando'
+      })
+
+      // VALIDAÇÃO 1: Processo criado?
+      if (!processResponse?.data?.id) {
+        throw new Error('Falha ao criar processo - resposta inválida do backend')
+      }
+
+      const processId = processResponse.data.id
+
+      // ETAPA 2: Criar workflow DEPOIS
+      const workflowResponse = await api.post('/workflows/', {
         workflow_type: processType,
-        client_id: 1, // Por enquanto usando ID fixo
+        process_id: processId,
+        client_id: 1,
         initial_data: {
           alteration_types: alterationTypes.length > 0 ? alterationTypes : undefined
         }
       })
 
-      setWorkflow(response.data)
+      // VALIDAÇÃO 2: Workflow válido?
+      if (!workflowResponse?.data?.id) {
+        throw new Error('Falha ao criar automação - workflow inválido')
+      }
+
+      if (!workflowResponse?.data?.stages || workflowResponse.data.stages.length === 0) {
+        throw new Error('Falha ao criar automação - sem estágios definidos')
+      }
+
+      // ETAPA 3: Atualizar estado (só se TUDO deu certo)
+      setWorkflow(workflowResponse.data)
       setSelectedType(processType)
+
     } catch (err: any) {
       console.error('Erro ao criar workflow:', err)
-      setError(err.response?.data?.detail || 'Erro ao iniciar automação')
+      const errorMsg = err.response?.data?.detail || err.message || 'Erro desconhecido ao iniciar automação'
+      setError(errorMsg)
+      setWorkflow(null)
     } finally {
       setLoading(false)
     }
