@@ -91,21 +91,19 @@ def create_tenant_schema(tenant_id: int, db: Session = None) -> bool:
             CREATE TABLE {schema_name}.processes (
                 id SERIAL PRIMARY KEY,
                 client_id INTEGER NOT NULL REFERENCES {schema_name}.clients(id),
-                type VARCHAR(100) NOT NULL,
-                subtype VARCHAR(100),
-                status VARCHAR(50) NOT NULL DEFAULT 'criado',
+                process_type VARCHAR(100) NOT NULL,
+                title VARCHAR(200) NOT NULL,
+                description TEXT,
+                priority VARCHAR(20) NOT NULL DEFAULT 'normal',
+                estimated_days INTEGER NOT NULL DEFAULT 30,
+                status VARCHAR(50) NOT NULL DEFAULT 'aguardando',
+                alteration_types JSONB,
                 assigned_to INTEGER REFERENCES {schema_name}.users(id),
                 created_by INTEGER REFERENCES {schema_name}.users(id),
-                data JSONB DEFAULT '{{}}',
-                checklist JSONB DEFAULT '[]',
-                progress_percent INTEGER DEFAULT 0,
-                estimated_completion DATE,
                 created_at TIMESTAMP NOT NULL DEFAULT NOW(),
                 updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
                 started_at TIMESTAMP,
-                completed_at TIMESTAMP,
-                canceled_at TIMESTAMP,
-                extra_data JSONB DEFAULT '{{}}'
+                completed_at TIMESTAMP
             )
         """))
         db.execute(text(f"CREATE INDEX ix_{schema_name}_processes_client ON {schema_name}.processes(client_id)"))

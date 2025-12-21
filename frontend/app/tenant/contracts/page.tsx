@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { AlterationModal } from '@/components/alteration-modal'
 import {
   FileText,
   MapPin,
@@ -40,6 +41,8 @@ export default function ContractsPage() {
   const [selectedAct, setSelectedAct] = useState<string | null>(null)
   const [actDetails, setActDetails] = useState<ActDetails | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showAlterationModal, setShowAlterationModal] = useState(false)
+  const [selectedAlterations, setSelectedAlterations] = useState<string[]>([])
 
   useEffect(() => {
     loadActs()
@@ -60,11 +63,36 @@ export default function ContractsPage() {
   const handleSelectAct = async (actId: string) => {
     try {
       setSelectedAct(actId)
+
+      // Se for alteração contratual, abrir modal de seleção múltipla
+      if (actId.startsWith('alteracao')) {
+        setShowAlterationModal(true)
+        return
+      }
+
       setLoading(true)
       const response = await api.get(`/contracts/acts/${actId}`)
       setActDetails(response.data)
     } catch (error) {
       console.error('Erro ao carregar detalhes do ato:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAlterationConfirm = async (alterations: string[]) => {
+    setSelectedAlterations(alterations)
+    setShowAlterationModal(false)
+
+    // Carregar detalhes com as alterações selecionadas
+    try {
+      setLoading(true)
+      const response = await api.post('/contracts/acts/multiple', {
+        alteration_types: alterations
+      })
+      setActDetails(response.data)
+    } catch (error) {
+      console.error('Erro ao carregar detalhes das alterações:', error)
     } finally {
       setLoading(false)
     }
@@ -84,13 +112,23 @@ export default function ContractsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Agente de Contratos</h1>
-        <p className="text-muted-foreground mt-1">
-          Selecione o tipo de ato contratual que deseja elaborar
-        </p>
-      </div>
+    <>
+      <AlterationModal
+        open={showAlterationModal}
+        onClose={() => {
+          setShowAlterationModal(false)
+          setSelectedAct(null)
+        }}
+        onConfirm={handleAlterationConfirm}
+      />
+
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Agente de Contratos</h1>
+          <p className="text-muted-foreground mt-1">
+            Selecione o tipo de ato contratual que deseja elaborar
+          </p>
+        </div>
 
       {!selectedAct ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -242,6 +280,30 @@ export default function ContractsPage() {
             </Card>
           </div>
 
+          {/* Alterações Selecionadas */}
+          {selectedAlterations.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Alterações Selecionadas</CardTitle>
+                <CardDescription>
+                  Você selecionou {selectedAlterations.length} tipo(s) de alteração
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {selectedAlterations.map((alt) => (
+                    <Badge key={alt} variant="secondary">
+                      {alt === 'endereco' && 'Endereço'}
+                      {alt === 'socios' && 'Sócios'}
+                      {alt === 'capital' && 'Capital Social'}
+                      {alt === 'atividade' && 'Atividade'}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Preview/Formulário */}
           <Card>
             <CardHeader>
@@ -262,6 +324,7 @@ export default function ContractsPage() {
           </Card>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }

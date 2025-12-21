@@ -130,20 +130,26 @@ class ProcessService:
                 detail="Cliente não encontrado"
             )
 
+        # Preparar alteration_types se existir
+        import json
+        alteration_types_json = None
+        if process_data.alteration_types:
+            alteration_types_json = json.dumps(process_data.alteration_types)
+
         # Criar processo
         result = db.execute(
             text(f"""
                 INSERT INTO {schema_name}.processes (
                     client_id, process_type, title, description,
-                    priority, estimated_days, status, assigned_to, created_by
+                    priority, estimated_days, status, assigned_to, created_by, alteration_types
                 )
                 VALUES (
                     :client_id, :process_type, :title, :description,
-                    :priority, :estimated_days, :status, :assigned_to, :created_by
+                    :priority, :estimated_days, :status, :assigned_to, :created_by, :alteration_types::jsonb
                 )
                 RETURNING id, client_id, process_type, title, description,
                           priority, estimated_days, status, assigned_to, created_by,
-                          created_at, updated_at, started_at, completed_at
+                          alteration_types, created_at, updated_at, started_at, completed_at
             """),
             {
                 "client_id": process_data.client_id,
@@ -154,7 +160,8 @@ class ProcessService:
                 "estimated_days": process_data.estimated_days or 30,
                 "status": process_data.status or "aguardando",
                 "assigned_to": process_data.assigned_to,
-                "created_by": user_id
+                "created_by": user_id,
+                "alteration_types": alteration_types_json
             }
         )
 
@@ -241,6 +248,11 @@ class ProcessService:
             update_fields.append("process_type = :process_type")
             params["process_type"] = process_data.process_type
 
+        if process_data.alteration_types is not None:
+            import json
+            update_fields.append("alteration_types = :alteration_types::jsonb")
+            params["alteration_types"] = json.dumps(process_data.alteration_types)
+
         if not update_fields:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -257,7 +269,7 @@ class ProcessService:
                 WHERE id = :process_id
                 RETURNING id, client_id, process_type, title, description,
                           priority, estimated_days, status, assigned_to, created_by,
-                          created_at, updated_at, started_at, completed_at
+                          alteration_types, created_at, updated_at, started_at, completed_at
             """),
             params
         )

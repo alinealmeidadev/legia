@@ -18,6 +18,7 @@ import {
   MessageSquare,
   FileSignature,
   Rocket,
+  HeadphonesIcon,
 } from 'lucide-react'
 
 interface NavItem {
@@ -31,6 +32,7 @@ const adminNavItems: NavItem[] = [
   { title: 'Tenants', href: '/admin/tenants', icon: Building2 },
   { title: 'Planos', href: '/admin/plans', icon: CreditCard },
   { title: 'Usuários', href: '/admin/users', icon: Users },
+  { title: 'Suporte', href: '/admin/support', icon: HeadphonesIcon },
   { title: 'Configurações', href: '/admin/settings', icon: Settings },
 ]
 
