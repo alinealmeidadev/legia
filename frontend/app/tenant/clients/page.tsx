@@ -11,6 +11,7 @@ import { Users } from 'lucide-react'
 
 interface Client {
   id: number
+  client_number?: number
   type: string
   name: string
   document: string
@@ -144,7 +145,14 @@ export default function ClientsPage() {
                       <Users className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium">{client.name}</p>
+                      <p className="font-medium">
+                        {client.client_number && (
+                          <span className="text-primary font-bold mr-2">
+                            #{client.client_number}
+                          </span>
+                        )}
+                        {client.name}
+                      </p>
                       <div className="flex gap-4 text-sm text-muted-foreground mt-1">
                         <span>{getTypeText(client.type)}</span>
                         <span>•</span>

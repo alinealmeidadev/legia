@@ -21,6 +21,8 @@ class Client(Base):
 
     # Identificação
     id = Column(Integer, primary_key=True, index=True)
+    client_number = Column(Integer, nullable=True, unique=True, index=True,
+                          comment="Número sequencial do cliente (ex: Cliente #1234)")
 
     # Tipo
     type = Column(String(10), nullable=False,

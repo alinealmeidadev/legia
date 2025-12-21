@@ -4,174 +4,261 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Mail, Send, Calendar, User, Building } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Building, Search, Clock, CheckCircle, AlertCircle, FileText, ArrowRight } from 'lucide-react'
 
-interface Communication {
+interface Protocol {
   id: number
-  type: string
-  recipient_organ: string
-  subject: string
-  body: string
+  process_id: number
+  client_name: string
+  client_number: number
+  organ: string
+  protocol_number: string
+  process_type: string
   status: string
-  created_at: string
-  sent_at?: string
+  submitted_at: string
+  estimated_conclusion: string
+  last_update: string
 }
 
 export default function CommunicationsPage() {
-  const [communications, setCommunications] = useState<Communication[]>([])
+  const [protocols, setProtocols] = useState<Protocol[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    loadCommunications()
+    loadProtocols()
   }, [])
 
-  const loadCommunications = async () => {
+  const loadProtocols = async () => {
     try {
       setLoading(true)
-      // Por enquanto, dados mockados - a API será implementada depois
-      setCommunications([])
+      // Dados mockados - API será implementada
+      const mockData: Protocol[] = [
+        {
+          id: 1,
+          process_id: 42,
+          client_name: "ABC Contabilidade Ltda",
+          client_number: 1001,
+          organ: "Junta Comercial - JUCESP",
+          protocol_number: "2025/123456",
+          process_type: "Alteração Contratual",
+          status: "em_analise",
+          submitted_at: "2025-12-20T10:00:00",
+          estimated_conclusion: "2025-12-28",
+          last_update: "2025-12-21T14:30:00"
+        }
+      ]
+      setProtocols(mockData)
     } catch (error) {
-      console.error('Erro ao carregar comunicações:', error)
+      console.error('Erro ao carregar protocolos:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      draft: 'bg-gray-100 text-gray-800',
-      sent: 'bg-blue-100 text-blue-800',
-      delivered: 'bg-green-100 text-green-800',
-      failed: 'bg-red-100 text-red-800',
+  const getStatusConfig = (status: string) => {
+    const configs: Record<string, { label: string; color: string; icon: any }> = {
+      em_analise: {
+        label: 'Em Análise',
+        color: 'bg-blue-100 text-blue-800 border-blue-200',
+        icon: Clock
+      },
+      deferido: {
+        label: 'Deferido',
+        color: 'bg-green-100 text-green-800 border-green-200',
+        icon: CheckCircle
+      },
+      pendente: {
+        label: 'Pendente',
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: AlertCircle
+      },
+      indeferido: {
+        label: 'Indeferido',
+        color: 'bg-red-100 text-red-800 border-red-200',
+        icon: AlertCircle
+      }
     }
-    return colors[status] || 'bg-gray-100 text-gray-800'
+    return configs[status] || configs.em_analise
   }
 
-  const getStatusText = (status: string) => {
-    const labels: Record<string, string> = {
-      draft: 'Rascunho',
-      sent: 'Enviado',
-      delivered: 'Entregue',
-      failed: 'Falhou',
-    }
-    return labels[status] || status
-  }
-
-  const getTypeText = (type: string) => {
-    const types: Record<string, string> = {
-      email: 'Email',
-      oficio: 'Ofício',
-      requerimento: 'Requerimento',
-      recurso: 'Recurso',
-    }
-    return types[type] || type
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Carregando comunicações...</p>
-      </div>
-    )
-  }
+  const filteredProtocols = protocols.filter(p =>
+    p.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.protocol_number.includes(searchTerm) ||
+    p.client_number.toString().includes(searchTerm)
+  )
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold">Comunicações</h1>
+          <h1 className="text-3xl font-bold">Acompanhamento de Protocolos</h1>
           <p className="text-muted-foreground mt-1">
-            Gerenciar comunicações com órgãos
+            Monitore protocolos em órgãos públicos (Junta Comercial, Receita Federal, Prefeitura, etc.)
           </p>
         </div>
-        <Button>
-          <Send className="mr-2 h-4 w-4" />
-          Nova Comunicação
-        </Button>
       </div>
 
-      {communications.length === 0 ? (
+      {/* Filtros */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por cliente, nº cliente ou protocolo..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Button variant="outline">
+              Filtrar por Órgão
+            </Button>
+            <Button variant="outline">
+              Filtrar por Status
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista de Protocolos */}
+      {loading ? (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-12">
-              <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-lg font-medium mb-2">Nenhuma comunicação</h3>
-              <p className="text-muted-foreground mb-4">
-                Comece criando sua primeira comunicação
+              <p className="text-muted-foreground">Carregando protocolos...</p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : filteredProtocols.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-12">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-lg font-medium mb-2">Nenhum protocolo encontrado</h3>
+              <p className="text-muted-foreground">
+                {searchTerm
+                  ? 'Tente ajustar sua busca'
+                  : 'Protocolos aparecerão aqui quando processos forem enviados aos órgãos'
+                }
               </p>
-              <Button>
-                <Send className="mr-2 h-4 w-4" />
-                Nova Comunicação
-              </Button>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Histórico de Comunicações</CardTitle>
-            <CardDescription>
-              {communications.length}{' '}
-              {communications.length === 1 ? 'comunicação registrada' : 'comunicações registradas'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {communications.map((comm) => (
-                <div
-                  key={comm.id}
-                  className="flex items-start justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Mail className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-medium truncate">{comm.subject}</p>
-                        <Badge variant="outline" className={getStatusColor(comm.status)}>
-                          {getStatusText(comm.status)}
+        <div className="grid gap-4">
+          {filteredProtocols.map((protocol) => {
+            const statusConfig = getStatusConfig(protocol.status)
+            const StatusIcon = statusConfig.icon
+
+            return (
+              <Card key={protocol.id} className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <CardTitle className="text-lg">
+                          Cliente #{protocol.client_number} - {protocol.client_name}
+                        </CardTitle>
+                        <Badge variant="outline" className={statusConfig.color}>
+                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {statusConfig.label}
                         </Badge>
                       </div>
-                      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mb-2">
-                        <span>{getTypeText(comm.type)}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <Building className="h-3 w-3" />
-                          {comm.recipient_organ}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {comm.body}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        Criado em {formatDate(comm.created_at)}
-                        {comm.sent_at && ` • Enviado em ${formatDate(comm.sent_at)}`}
-                      </div>
+                      <CardDescription>
+                        {protocol.process_type} • Processo #{protocol.process_id}
+                      </CardDescription>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm">
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-sm font-medium mb-1 flex items-center gap-1">
+                        <Building className="h-3 w-3" />
+                        Órgão
+                      </p>
+                      <p className="text-sm text-muted-foreground">{protocol.organ}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium mb-1">Nº Protocolo</p>
+                      <p className="text-sm font-mono text-muted-foreground">{protocol.protocol_number}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium mb-1 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Previsão
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(protocol.estimated_conclusion).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium mb-1">Última Atualização</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(protocol.last_update).toLocaleString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-4 pt-4 border-t">
+                    <Button size="sm" variant="outline">
                       Ver Detalhes
                     </Button>
+                    <Button size="sm" variant="outline">
+                      Atualizar Status
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <FileText className="h-4 w-4 mr-1" />
+                      Documentos
+                    </Button>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
       )}
+
+      {/* Informações */}
+      <Card className="border-primary/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            Como funciona?
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex items-start gap-2">
+            <ArrowRight className="h-4 w-4 text-primary mt-0.5" />
+            <span>Quando um processo é enviado para um órgão público, ele aparece aqui automaticamente</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <ArrowRight className="h-4 w-4 text-primary mt-0.5" />
+            <span>O Agente Monitor verifica periodicamente o status nos sites dos órgãos</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <ArrowRight className="h-4 w-4 text-primary mt-0.5" />
+            <span>Você recebe notificações quando houver mudanças de status</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <ArrowRight className="h-4 w-4 text-primary mt-0.5" />
+            <span>Acompanhe: Junta Comercial, Receita Federal, Prefeitura, SEFAZ e outros</span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

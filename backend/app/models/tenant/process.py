@@ -38,9 +38,13 @@ class Process(Base):
     estimated_days = Column(Integer, nullable=False, default=30,
                            comment="Prazo estimado em dias")
 
-    # Status
+    # Status e Stage
     status = Column(String(50), nullable=False, default="aguardando", index=True,
                    comment="Status: aguardando, em_andamento, protocolado, concluido, cancelado")
+    current_stage = Column(String(100), nullable=True,
+                          comment="Etapa atual: comercial, documentos, contratos, protocolo, monitoramento")
+    department = Column(String(100), nullable=True,
+                       comment="Departamento responsável atual")
 
     # Alterações específicas (para processos de alteração contratual)
     alteration_types = Column(JSON, nullable=True,

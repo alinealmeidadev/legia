@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     ASAAS_BASE_URL: str = "https://sandbox.asaas.com/api/v3"
 
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000,https://legia-git-main-aline-almeidas-projects.vercel.app,https://legia-aline-almeidas-projects.vercel.app,https://legia.vercel.app,https://*.vercel.app"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000,https://legia-git-main-aline-almeidas-projects.vercel.app,https://legia-aline-almeidas-projects.vercel.app,https://legia.vercel.app,https://*.vercel.app,https://legia-backend.onrender.com"
 
     @property
     def cors_origins_list(self) -> List[str]:

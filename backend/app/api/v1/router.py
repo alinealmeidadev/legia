@@ -3,7 +3,7 @@ LEGIA PLATFORM - Roteador Principal API v1
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, tenants, clients, processes, agents, contracts, workflows, setup
+from app.api.v1.endpoints import auth, tenants, clients, processes, agents, contracts, workflows, setup, whatsapp
 
 
 # Criar roteador principal
@@ -63,6 +63,13 @@ api_router.include_router(
     workflows.router,
     prefix="/workflows",
     tags=["Workflows Automatizados (Tenant)"]
+)
+
+# Incluir rotas de WhatsApp (Tenant)
+api_router.include_router(
+    whatsapp.router,
+    prefix="/whatsapp",
+    tags=["WhatsApp Business API (Tenant)"]
 )
 
 # TODO: Adicionar mais rotas

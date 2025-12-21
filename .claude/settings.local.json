@@ -30,7 +30,26 @@
       "WebSearch",
       "Bash(npm install:*)",
       "Bash(cat:*)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "WebFetch(domain:legia-backend.onrender.com)",
+      "Bash(timeout 180 bash:*)",
+      "Bash(git -C \"C:\\Users\\aline\\OneDrive\\Desktop\\LEGIA\" add STATUS_FINAL_LOGIN.md BEM_VINDA_ALINE.md)",
+      "Bash(python:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(git restore:*)",
+      "Bash(where:*)",
+      "Bash(timeout /t 3)",
+      "Bash(ping:*)",
+      "Bash(findstr:*)",
+      "Bash(vercel env:*)",
+      "Bash(node test_frontend_login.js:*)",
+      "Bash(dir:*)",
+      "Bash(.venvScriptspython.exe migrate_processes_table.py)",
+      "Bash(\".venv/Scripts/python.exe\" migrate_processes_table.py)",
+      "WebFetch(domain:legia-git-main-aline-almeidas-projects.vercel.app)",
+      "Bash(timeout 30 curl:*)",
+      "Bash(code .)",
+      "Bash(.venvScriptspython.exe migrate_add_fields.py)"
     ]
   }
 }
