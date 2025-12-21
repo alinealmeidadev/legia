@@ -1,33 +1,25 @@
 import axios from 'axios'
 
-// Função que retorna URL do backend baseado no ambiente ATUAL
-const getBaseURL = () => {
-  // 1. Se tem variável de ambiente, usar ela
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL
-  }
+// HARDCODED: SEMPRE usar Render em produção
+const isLocalhost = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
-  // 2. Se está no servidor (SSR), usar produção
-  if (typeof window === 'undefined') {
-    return 'https://legia-backend.onrender.com'
-  }
-
-  // 3. Se está no browser em localhost, usar local
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return 'http://localhost:8000'
-  }
-
-  // 4. Qualquer outro caso (produção no browser), usar Render
-  return 'https://legia-backend.onrender.com'
-}
+const API_BASE_URL = isLocalhost
+  ? 'http://localhost:8000'
+  : 'https://legia-backend.onrender.com'
 
 export const api = axios.create({
-  baseURL: `${getBaseURL()}/api/v1`,
+  baseURL: `${API_BASE_URL}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true,
 })
+
+// Debug
+if (typeof window !== 'undefined') {
+  console.log('🔧 API configurada:', api.defaults.baseURL)
+}
 
 // Interceptor para adicionar token automaticamente
 api.interceptors.request.use((config) => {
