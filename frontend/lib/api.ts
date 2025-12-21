@@ -1,6 +1,16 @@
 import axios from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// Forçar URL de produção se não estiver em localhost
+const getApiUrl = () => {
+  // Se estamos no browser e não é localhost, usar URL de produção
+  if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+    return 'https://legia-backend.onrender.com'
+  }
+  // Caso contrário, usar variável de ambiente ou localhost
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+}
+
+const API_URL = getApiUrl()
 
 export const api = axios.create({
   baseURL: `${API_URL}/api/v1`,
