@@ -1,32 +1,42 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { authService } from '@/lib/auth'
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { authService } from "@/lib/auth";
 
 export default function HomePage() {
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
-    if (authService.isAuthenticated()) {
-      const user = authService.getCurrentUser()
+    const workflowId = searchParams.get("workflow");
 
-      if (user?.user_type === 'legia_user') {
-        router.push('/admin')
-      } else {
-        router.push('/tenant')
-      }
-    } else {
-      router.push('/login')
+    if (!workflowId) {
+      setError("Workflow não informado");
+      return;
     }
-  }, [router])
 
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold mb-2">LEGIA PLATFORM</h1>
-        <p className="text-muted-foreground">Carregando...</p>
-      </div>
-    </div>
-  )
+    const loadWorkflow = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/workflows/${workflowId}`);
+
+        if (!res.data?.id || !res.data?.stages) {
+          throw new Error("Workflow inválido");
+        }
+
+        setWorkflow(res.data);
+      } catch (err: any) {
+        console.error(err);
+        setError(
+          err.response?.data?.detail ||
+            err.message ||
+            "Erro ao carregar workflow"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWorkflow();
+  }, []);
 }
