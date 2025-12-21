@@ -133,6 +133,60 @@ async def startup_event():
         finally:
             db.close()
 
+        # Executar migrações automáticas
+        print("\n🔄 Executando migrações automáticas...")
+        try:
+            from app.models.public.tenant import Tenant
+            from sqlalchemy import text
+
+            tenants = db.query(Tenant).all()
+            print(f"📦 Encontrados {len(tenants)} tenants")
+
+            for tenant in tenants:
+                schema_name = f"tenant_{tenant.id}"
+                try:
+                    # Adicionar client_number se não existir
+                    db.execute(text(f"""
+                        ALTER TABLE {schema_name}.clients
+                        ADD COLUMN IF NOT EXISTS client_number INTEGER UNIQUE
+                    """))
+
+                    # Criar index
+                    db.execute(text(f"""
+                        CREATE INDEX IF NOT EXISTS idx_clients_number
+                        ON {schema_name}.clients(client_number)
+                    """))
+
+                    # Preencher client_number
+                    db.execute(text(f"""
+                        UPDATE {schema_name}.clients
+                        SET client_number = id
+                        WHERE client_number IS NULL
+                    """))
+
+                    # Adicionar current_stage
+                    db.execute(text(f"""
+                        ALTER TABLE {schema_name}.processes
+                        ADD COLUMN IF NOT EXISTS current_stage VARCHAR(100)
+                    """))
+
+                    # Adicionar department
+                    db.execute(text(f"""
+                        ALTER TABLE {schema_name}.processes
+                        ADD COLUMN IF NOT EXISTS department VARCHAR(100)
+                    """))
+
+                    db.commit()
+                    print(f"  ✅ Schema {schema_name} migrado")
+
+                except Exception as migration_error:
+                    print(f"  ⚠️  {schema_name}: {migration_error}")
+                    db.rollback()
+
+            print("✅ Migrações concluídas!")
+        except Exception as migration_error:
+            print(f"⚠️  Erro nas migrações: {migration_error}")
+
         print("🎉 Sistema inicializado e pronto para uso!\n")
 
     except Exception as e:
