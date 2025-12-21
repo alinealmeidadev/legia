@@ -8,8 +8,7 @@ from typing import Dict, Any
 from pydantic import BaseModel
 
 from app.db.session import get_db
-from app.core.auth import get_current_user
-from app.models.tenant.user import User
+from app.core.deps import get_current_tenant_user
 
 router = APIRouter()
 
@@ -106,7 +105,7 @@ async def whatsapp_webhook_verify(request: Request):
 @router.post("/send")
 async def send_whatsapp_message(
     message: WhatsAppMessage,
-    current_user: User = Depends(get_current_user),
+    user_tenant: tuple = Depends(get_current_tenant_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -140,7 +139,7 @@ async def send_whatsapp_message(
 
 @router.get("/templates")
 async def get_whatsapp_templates(
-    current_user: User = Depends(get_current_user)
+    user_tenant: tuple = Depends(get_current_tenant_user)
 ):
     """
     Lista templates de mensagem aprovados
@@ -170,7 +169,7 @@ async def get_whatsapp_templates(
 async def notify_client_whatsapp(
     client_number: int,
     message: str,
-    current_user: User = Depends(get_current_user),
+    user_tenant: tuple = Depends(get_current_tenant_user),
     db: Session = Depends(get_db)
 ):
     """
