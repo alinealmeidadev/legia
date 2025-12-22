@@ -8,35 +8,30 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const workflowId = searchParams.get("workflow");
+    // Verificar se já está autenticado
+    if (authService.isAuthenticated()) {
+      const user = authService.getCurrentUser();
 
-    if (!workflowId) {
-      setError("Workflow não informado");
-      return;
-    }
-
-    const loadWorkflow = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get(`/workflows/${workflowId}`);
-
-        if (!res.data?.id || !res.data?.stages) {
-          throw new Error("Workflow inválido");
+      if (user) {
+        // Redirecionar para dashboard apropriado
+        if (user.user_type === 'legia_user' || user.role === 'superadmin') {
+          router.push('/admin');
+        } else {
+          router.push('/tenant');
         }
-
-        setWorkflow(res.data);
-      } catch (err: any) {
-        console.error(err);
-        setError(
-          err.response?.data?.detail ||
-            err.message ||
-            "Erro ao carregar workflow"
-        );
-      } finally {
-        setLoading(false);
+      } else {
+        // Token existe mas user não, ir para login
+        router.push('/login');
       }
-    };
+    } else {
+      // Não autenticado, ir para login
+      router.push('/login');
+    }
+  }, [router]);
 
-    loadWorkflow();
-  }, []);
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
+  );
 }
