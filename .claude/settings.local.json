@@ -49,7 +49,9 @@
       "WebFetch(domain:legia-git-main-aline-almeidas-projects.vercel.app)",
       "Bash(timeout 30 curl:*)",
       "Bash(code .)",
-      "Bash(.venvScriptspython.exe migrate_add_fields.py)"
+      "Bash(.venvScriptspython.exe migrate_add_fields.py)",
+      "Bash(npm run build:*)",
+      "Bash(rd /s /q .next)"
     ]
   }
 }

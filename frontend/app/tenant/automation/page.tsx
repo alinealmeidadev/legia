@@ -1,372 +1,466 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { api } from '@/lib/api'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { AlterationModal } from '@/components/alteration-modal'
-import {
-  Rocket,
-  MapPin,
-  Users,
-  DollarSign,
-  Briefcase,
-  Building,
-  CheckCircle,
-  Clock,
-  ArrowRight
-} from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import { Building2, FileText, XCircle, Loader2 } from 'lucide-react';
 
+// ========================================
+// TIPOS DE PROCESSO DISPONÍVEIS
+// ========================================
+const PROCESS_TYPES = [
+  {
+    id: 'abertura',
+    title: 'Abertura de Empresa',
+    description: 'Constituir nova empresa',
+    icon: Building2,
+    color: 'bg-blue-500',
+    hasMultipleOptions: false,
+    options: []
+  },
+  {
+    id: 'alteracao',
+    title: 'Alteração Contratual',
+    description: 'Alterações diversas no contrato social',
+    icon: FileText,
+    color: 'bg-green-500',
+    hasMultipleOptions: true,
+    options: [
+      { id: 'endereco', label: 'Alteração de Endereço', description: 'Mudança do endereço da sede' },
+      { id: 'socios', label: 'Alteração de Quadro Societário', description: 'Inclusão, exclusão ou alteração de sócios' },
+      { id: 'capital', label: 'Alteração de Capital Social', description: 'Aumento ou redução do capital' },
+      { id: 'atividade', label: 'Alteração de Atividade', description: 'Inclusão ou exclusão de CNAEs' },
+      { id: 'nome', label: 'Alteração de Nome Empresarial', description: 'Mudança da razão social ou nome fantasia' },
+      { id: 'administracao', label: 'Alteração de Administração', description: 'Mudança de administradores/diretores' }
+    ]
+  },
+  {
+    id: 'distrato',
+    title: 'Distrato Social (Encerramento)',
+    description: 'Encerramento da empresa',
+    icon: XCircle,
+    color: 'bg-red-500',
+    hasMultipleOptions: false,
+    options: []
+  }
+];
+
+// ========================================
+// COMPONENTE PRINCIPAL
+// ========================================
 export default function AutomationPage() {
-  const [selectedType, setSelectedType] = useState<string | null>(null)
-  const [workflow, setWorkflow] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [showAlterationModal, setShowAlterationModal] = useState(false)
+  const router = useRouter();
+  const { toast } = useToast();
 
-  // Tipos de processo disponíveis
-  const processTypes = [
-    {
-      id: 'alteracao',
-      nome: 'Alteração Contratual',
-      descricao: 'Alterações diversas no contrato social',
-      icon: Users,
-      color: 'bg-green-500'
-    },
-    {
-      id: 'abertura_empresa',
-      nome: 'Abertura de Empresa',
-      descricao: 'Constituir nova empresa',
-      icon: Building,
-      color: 'bg-red-500'
-    }
-  ]
+  // Estados
+  const [selectedType, setSelectedType] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOptions, setSelectedOptions] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState('');
+  const [processTitle, setProcessTitle] = useState('');
+  const [processDescription, setProcessDescription] = useState('');
+  const [priority, setPriority] = useState('normal');
+  const [deadline, setDeadline] = useState('30');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingClients, setLoadingClients] = useState(true);
 
-  const handleProcessTypeClick = (processType: string) => {
-    if (processType === 'alteracao') {
-      setShowAlterationModal(true)
-    } else {
-      startAutomation(processType, [])
-    }
-  }
+  // ========================================
+  // BUSCAR CLIENTES AO CARREGAR
+  // ========================================
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
-  const handleAlterationConfirm = (selectedTypes: string[]) => {
-    setShowAlterationModal(false)
-    startAutomation('alteracao', selectedTypes)
-  }
-
-  const startAutomation = async (processType: string, alterationTypes: string[]) => {
+  const fetchClients = async () => {
     try {
-      setLoading(true)
-      setError('')
-      setWorkflow(null)
-
-      // ETAPA 1: Criar processo PRIMEIRO
-      const alterationNames: Record<string, string> = {
-        'endereco': 'Endereço',
-        'socios': 'Sócios',
-        'capital': 'Capital Social',
-        'atividade': 'Atividade'
-      }
-
-      const processResponse = await api.post('/processes/', {
-        process_type: processType,
-        title: processType === 'alteracao'
-          ? `Alteração Contratual - ${alterationTypes.map(a => alterationNames[a] || a).join(', ')}`
-          : 'Abertura de Empresa',
-        client_id: 1,
-        alteration_types: alterationTypes.length > 0 ? alterationTypes : undefined,
-        priority: 'normal',
-        status: 'aguardando'
-      })
-
-      // VALIDAÇÃO 1: Processo criado?
-      if (!processResponse?.data?.id) {
-        throw new Error('Falha ao criar processo - resposta inválida do backend')
-      }
-
-      const processId = processResponse.data.id
-
-      // ETAPA 2: Criar workflow DEPOIS
-      const workflowResponse = await api.post('/workflows/', {
-        workflow_type: processType,
-        process_id: processId,
-        client_id: 1,
-        initial_data: {
-          alteration_types: alterationTypes.length > 0 ? alterationTypes : undefined
+      const token = localStorage.getItem('token');
+      const response = await fetch('https://legia-backend.onrender.com/api/v1/clients/', {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      })
+      });
 
-      // VALIDAÇÃO 2: Workflow válido?
-      if (!workflowResponse?.data?.id) {
-        throw new Error('Falha ao criar automação - workflow inválido')
+      if (response.ok) {
+        const data = await response.json();
+        setClients(data);
       }
-
-      if (!workflowResponse?.data?.stages || workflowResponse.data.stages.length === 0) {
-        throw new Error('Falha ao criar automação - sem estágios definidos')
-      }
-
-      // ETAPA 3: Atualizar estado (só se TUDO deu certo)
-      setWorkflow(workflowResponse.data)
-      setSelectedType(processType)
-
-    } catch (err: any) {
-      console.error('Erro ao criar workflow:', err)
-      const errorMsg = err.response?.data?.detail || err.message || 'Erro desconhecido ao iniciar automação'
-      setError(errorMsg)
-      setWorkflow(null)
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar a lista de clientes',
+        variant: 'destructive'
+      });
     } finally {
-      setLoading(false)
+      setLoadingClients(false);
     }
-  }
+  };
 
-  const getStageIcon = (stage: string) => {
-    const icons: Record<string, any> = {
-      'commercial': DollarSign,
-      'legalization': CheckCircle,
-      'client_form': MapPin,
-      'document_collection': Users,
-      'contracts': Building,
-      'protocol': Briefcase,
-      'monitoring': Clock,
-      'completed': CheckCircle
+  // ========================================
+  // ABRIR MODAL AO CLICAR NO CARD
+  // ========================================
+  const handleCardClick = (type) => {
+    setSelectedType(type);
+    setSelectedOptions([]);
+    setProcessTitle('');
+    setProcessDescription('');
+    setPriority('normal');
+    setDeadline('30');
+    setIsModalOpen(true);
+  };
+
+  // ========================================
+  // TOGGLE OPÇÕES (CHECKBOXES)
+  // ========================================
+  const toggleOption = (optionId) => {
+    setSelectedOptions(prev => {
+      if (prev.includes(optionId)) {
+        return prev.filter(id => id !== optionId);
+      } else {
+        return [...prev, optionId];
+      }
+    });
+  };
+
+  // ========================================
+  // CRIAR PROCESSO + WORKFLOW
+  // ========================================
+  const handleConfirm = async () => {
+    // Validações
+    if (!selectedClient) {
+      toast({
+        title: 'Cliente obrigatório',
+        description: 'Por favor, selecione um cliente',
+        variant: 'destructive'
+      });
+      return;
     }
-    return icons[stage] || Clock
-  }
 
-  if (workflow) {
-    const currentStage = workflow.stages.find((s: any) => s.stage === workflow.current_stage)
+    if (!processTitle.trim()) {
+      toast({
+        title: 'Título obrigatório',
+        description: 'Por favor, informe o título do processo',
+        variant: 'destructive'
+      });
+      return;
+    }
 
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Processo Automatizado</h1>
-            <p className="text-muted-foreground mt-1">
-              Workflow ID: {workflow.id}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setWorkflow(null)
-              setSelectedType(null)
-            }}
-          >
-            Voltar
-          </Button>
-        </div>
+    if (selectedType.hasMultipleOptions && selectedOptions.length === 0) {
+      toast({
+        title: 'Seleção obrigatória',
+        description: 'Por favor, selecione pelo menos uma alteração',
+        variant: 'destructive'
+      });
+      return;
+    }
 
-        {/* Progresso */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Progresso do Processo</CardTitle>
-            <CardDescription>
-              Estágio atual: {currentStage?.name}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {workflow.stages.map((stage: any, index: number) => {
-                const Icon = getStageIcon(stage.stage)
-                const isCurrent = stage.stage === workflow.current_stage
-                const isCompleted = stage.completed
+    setIsLoading(true);
 
-                return (
-                  <div
-                    key={stage.stage}
-                    className={`flex items-start gap-4 p-4 rounded-lg border ${
-                      isCurrent ? 'border-primary bg-primary/5' : ''
-                    } ${isCompleted ? 'bg-green-50 border-green-200' : ''}`}
-                  >
-                    <div className={`p-2 rounded-lg ${
-                      isCompleted ? 'bg-green-500 text-white' :
-                      isCurrent ? 'bg-primary text-white' :
-                      'bg-gray-200 text-gray-500'
-                    }`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
+    try {
+      const token = localStorage.getItem('token');
 
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{stage.name}</h3>
-                        {isCompleted && (
-                          <Badge variant="default" className="bg-green-500">
-                            Concluído
-                          </Badge>
-                        )}
-                        {isCurrent && (
-                          <Badge variant="default">
-                            Em Andamento
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {stage.description}
-                      </p>
-                      {stage.agent && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Agente: {stage.agent}
-                        </p>
-                      )}
-                    </div>
+      // ========================================
+      // PASSO 1: CRIAR PROCESSO
+      // ========================================
+      console.log('📝 Criando processo...');
+      
+      const processPayload = {
+        client_id: parseInt(selectedClient),
+        process_type: selectedType.id,
+        title: processTitle,
+        description: processDescription || `Processo de ${selectedType.title}`,
+        priority: priority,
+        deadline_days: parseInt(deadline),
+        contract_changes: selectedOptions // Array de alterações selecionadas
+      };
 
-                    {!isCompleted && index < workflow.stages.length - 1 && (
-                      <ArrowRight className="h-5 w-5 text-muted-foreground mt-2" />
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
+      console.log('Payload do processo:', processPayload);
 
-        {/* Histórico */}
-        {workflow.history && workflow.history.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {workflow.history.map((event: any, index: number) => (
-                  <div key={index} className="flex items-start gap-3 text-sm">
-                    <span className="text-muted-foreground">
-                      {new Date(event.timestamp).toLocaleString('pt-BR')}
-                    </span>
-                    <span>-</span>
-                    <span>{event.description}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      const processResponse = await fetch('https://legia-backend.onrender.com/api/v1/processes/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(processPayload)
+      });
 
-        {/* Formulários */}
-        {workflow.forms && workflow.forms.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Formulário Gerado</CardTitle>
-              <CardDescription>
-                O sistema gerou automaticamente um formulário para coletar dados
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Badge variant="secondary" className="mb-4">
-                {workflow.forms.length} formulário(s) disponível(is)
-              </Badge>
-              <p className="text-sm text-muted-foreground">
-                Em produção, o cliente receberia este formulário por email/WhatsApp
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    )
-  }
+      if (!processResponse.ok) {
+        const errorData = await processResponse.json();
+        throw new Error(errorData.detail || 'Erro ao criar processo');
+      }
 
+      const process = await processResponse.json();
+      console.log('✅ Processo criado:', process);
+
+      // Validar que processo tem ID
+      if (!process.id) {
+        throw new Error('Processo criado sem ID válido');
+      }
+
+      // ========================================
+      // PASSO 2: CRIAR WORKFLOW
+      // ========================================
+      console.log('⚙️ Criando workflow...');
+
+      const workflowPayload = {
+        process_id: process.id,
+        workflow_type: selectedType.id
+      };
+
+      console.log('Payload do workflow:', workflowPayload);
+
+      const workflowResponse = await fetch('https://legia-backend.onrender.com/api/v1/workflows/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(workflowPayload)
+      });
+
+      if (!workflowResponse.ok) {
+        const errorData = await workflowResponse.json();
+        throw new Error(errorData.detail || 'Erro ao criar workflow');
+      }
+
+      const workflow = await workflowResponse.json();
+      console.log('✅ Workflow criado:', workflow);
+
+      // Validar que workflow tem ID e stages
+      if (!workflow.id) {
+        throw new Error('Workflow criado sem ID válido');
+      }
+
+      if (!workflow.stages || workflow.stages.length === 0) {
+        throw new Error('Workflow criado sem etapas');
+      }
+
+      // ========================================
+      // SUCESSO: NAVEGAR PARA PÁGINA DO WORKFLOW
+      // ========================================
+      toast({
+        title: 'Sucesso! 🎉',
+        description: `Processo criado! Os agentes já começaram a trabalhar.`
+      });
+
+      // Fechar modal
+      setIsModalOpen(false);
+
+      // Aguardar 1 segundo e navegar
+      setTimeout(() => {
+        router.push(`/tenant/automation/${workflow.id}`);
+      }, 1000);
+
+    } catch (error) {
+      console.error('❌ Erro completo:', error);
+      
+      toast({
+        title: 'Erro ao criar processo',
+        description: error.message || 'Verifique sua conexão e tente novamente',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ========================================
+  // CANCELAR MODAL
+  // ========================================
+  const handleCancel = () => {
+    setIsModalOpen(false);
+    setSelectedType(null);
+    setSelectedOptions([]);
+    setProcessTitle('');
+    setProcessDescription('');
+  };
+
+  // ========================================
+  // RENDER
+  // ========================================
   return (
-    <>
-      <AlterationModal
-        open={showAlterationModal}
-        onClose={() => setShowAlterationModal(false)}
-        onConfirm={handleAlterationConfirm}
-      />
+    <div className="container mx-auto py-8">
+      {/* HEADER */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Automação de Processos</h1>
+        <p className="text-muted-foreground">
+          Inicie um processo totalmente automatizado. Os agentes trabalharão juntos para completar tudo!
+        </p>
+      </div>
 
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Rocket className="h-8 w-8 text-primary" />
-            Automação de Processos
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Inicie um processo totalmente automatizado. Os agentes trabalharão juntos para completar tudo!
-          </p>
-        </div>
-
-      {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <p className="text-red-600">{error}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {processTypes.map((type) => {
-          const Icon = type.icon
-
+      {/* CARDS DE TIPOS DE PROCESSO */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {PROCESS_TYPES.map((type) => {
+          const Icon = type.icon;
           return (
             <Card
               key={type.id}
-              className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-              onClick={() => !loading && handleProcessTypeClick(type.id)}
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => handleCardClick(type)}
             >
               <CardHeader>
-                <div className={`w-12 h-12 rounded-lg ${type.color} flex items-center justify-center mb-3`}>
-                  <Icon className="h-6 w-6 text-white" />
+                <div className={`w-16 h-16 rounded-lg ${type.color} flex items-center justify-center mb-4`}>
+                  <Icon className="w-8 h-8 text-white" />
                 </div>
-                <CardTitle className="text-lg">{type.nome}</CardTitle>
-                <CardDescription>{type.descricao}</CardDescription>
+                <CardTitle>{type.title}</CardTitle>
+                <CardDescription>{type.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? 'Iniciando...' : 'Iniciar Automação'}
-                </Button>
+                <Button className="w-full">Selecionar</Button>
               </CardContent>
             </Card>
-          )
+          );
         })}
       </div>
 
-      <Card className="border-primary">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Rocket className="h-5 w-5" />
-            Como Funciona?
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex items-start gap-2">
-            <span className="font-bold text-primary">1.</span>
-            <span>Você clica em um tipo de processo acima</span>
+      {/* MODAL DE CONFIGURAÇÃO */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedType?.title}</DialogTitle>
+            <DialogDescription>{selectedType?.description}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* SELEÇÃO DE CLIENTE */}
+            <div>
+              <Label htmlFor="client">Cliente *</Label>
+              <Select value={selectedClient} onValueChange={setSelectedClient}>
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingClients ? "Carregando..." : "Selecione o cliente"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id.toString()}>
+                      {client.name} - {client.cpf_cnpj}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* OPÇÕES MÚLTIPLAS (SE APLICÁVEL) */}
+            {selectedType?.hasMultipleOptions && (
+              <div>
+                <Label className="mb-3 block">Selecione as alterações *</Label>
+                <div className="space-y-3">
+                  {selectedType.options.map((option) => (
+                    <div key={option.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-accent">
+                      <Checkbox
+                        id={option.id}
+                        checked={selectedOptions.includes(option.id)}
+                        onCheckedChange={() => toggleOption(option.id)}
+                      />
+                      <div className="flex-1">
+                        <label
+                          htmlFor={option.id}
+                          className="font-medium cursor-pointer"
+                        >
+                          {option.label}
+                        </label>
+                        <p className="text-sm text-muted-foreground">
+                          {option.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {selectedOptions.length > 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {selectedOptions.length} alteração(ões) selecionada(s)
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* TÍTULO DO PROCESSO */}
+            <div>
+              <Label htmlFor="title">Título do Processo *</Label>
+              <Input
+                id="title"
+                placeholder={`Ex: ${selectedType?.title} - Cliente XYZ`}
+                value={processTitle}
+                onChange={(e) => setProcessTitle(e.target.value)}
+              />
+            </div>
+
+            {/* DESCRIÇÃO */}
+            <div>
+              <Label htmlFor="description">Descrição (opcional)</Label>
+              <Textarea
+                id="description"
+                placeholder="Informações adicionais sobre o processo..."
+                value={processDescription}
+                onChange={(e) => setProcessDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            {/* PRIORIDADE E PRAZO */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="priority">Prioridade</Label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">Baixa</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="alta">Alta</SelectItem>
+                    <SelectItem value="urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="deadline">Prazo (dias)</Label>
+                <Input
+                  id="deadline"
+                  type="number"
+                  min="1"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex items-start gap-2">
-            <span className="font-bold text-primary">2.</span>
-            <span>Sistema cria workflow automatizado com múltiplos agentes</span>
+
+          {/* BOTÕES */}
+          <div className="flex justify-end space-x-3">
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                'Iniciar Processo'
+              )}
+            </Button>
           </div>
-          <div className="flex items-start gap-2">
-            <span className="font-bold text-primary">3.</span>
-            <span>Agente Comercial gera orçamento</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="font-bold text-primary">4.</span>
-            <span>Agente de Legalização analisa viabilidade</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="font-bold text-primary">5.</span>
-            <span>Sistema gera formulário inteligente para o cliente</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="font-bold text-primary">6.</span>
-            <span>Agente de Contratos gera documentos</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="font-bold text-primary">7.</span>
-            <span>Agente de Protocolos envia para órgãos</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="font-bold text-primary">8.</span>
-            <span>Agente Monitor acompanha até conclusão</span>
-          </div>
-        </CardContent>
-      </Card>
-      </div>
-    </>
-  )
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
