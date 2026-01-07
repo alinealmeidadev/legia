@@ -1,6 +1,6 @@
 # CLAUDE.md - Memória de Contexto do Projeto LEGIA
-**Última atualização:** 06/01/2026
-**Status do Projeto:** 72% Concluído (MVP avançado, mas incompleto para produção)
+**Última atualização:** 07/01/2026
+**Status do Projeto:** 75% Concluído (MVP avançado com correções críticas de segurança)
 
 ---
 
@@ -58,6 +58,48 @@ $aact_hmlg_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmFkZDJkYWNiLTZlMmMtNG
 **Redis:**
 - Cache local via Docker
 - Status: ⚠️ Docker não está rodando atualmente
+
+---
+
+## ✅ CORREÇÕES RECENTES (07/01/2026)
+
+**Sessão de Correções Críticas de Segurança:**
+
+### 1. SQL Injection - CORRIGIDO ✅
+- **Problema:** 7 arquivos com interpolação direta de `schema_name` em queries SQL
+- **Solução:** Criada função `validate_schema_name()` com regex `^tenant_\d+$`
+- **Arquivos corrigidos:**
+  - `backend/app/utils/tenant_schema.py` (função de validação)
+  - `backend/app/core/deps.py`
+  - `backend/app/api/v1/endpoints/clients.py`
+  - `backend/app/services/process_service.py`
+  - `backend/app/db/session.py`
+  - `backend/migrate_processes_table.py`
+  - `backend/migrations/versions/20241219_0003_create_processes_table.py`
+- **Commit:** `71205f6`
+
+### 2. Datetime Deprecation - CORRIGIDO ✅
+- **Problema:** `datetime.utcnow()` deprecated no Python 3.12+
+- **Solução:** Substituído por `datetime.now(timezone.utc)` em 3 arquivos
+- **Arquivos corrigidos:**
+  - `backend/app/core/security.py` (4 ocorrências)
+  - `backend/app/services/auth_service.py` (3 ocorrências)
+  - `backend/app/api/v1/endpoints/tenants.py` (1 ocorrência)
+- **Commit:** `71205f6`
+
+### 3. Fetch() vs Axios - CORRIGIDO ✅
+- **Problema:** Uso de `fetch()` direto com URL hardcoded, sem autenticação automática
+- **Solução:** Substituído por cliente axios configurado com interceptors
+- **Benefícios:**
+  - Autenticação automática via interceptor
+  - Renovação automática de token expirado
+  - Tratamento consistente de erros
+  - URL base automática (localhost ou produção)
+- **Arquivo corrigido:**
+  - `frontend/app/tenant/automation/page.tsx` (3 chamadas)
+- **Commit:** `c7808af`
+
+**Total:** 11 arquivos corrigidos, 5 vulnerabilidades críticas resolvidas
 
 ---
 
