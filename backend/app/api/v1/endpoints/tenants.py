@@ -191,9 +191,9 @@ def delete_tenant(
         )
 
     # Soft delete
-    from datetime import datetime
+    from datetime import datetime, timezone
     tenant.status = "canceled"
-    tenant.canceled_at = datetime.utcnow()
+    tenant.canceled_at = datetime.now(timezone.utc)
 
     db.commit()
 

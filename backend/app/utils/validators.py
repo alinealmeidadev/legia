@@ -1,7 +1,9 @@
 """
 LEGIA PLATFORM - Validadores
-Validação de CPF e CNPJ conforme algoritmo oficial
+Validação de CPF, CNPJ, Email, Senha, Telefone e Sanitização
 """
+import re
+from typing import Optional, Tuple
 
 
 def validar_cpf(cpf: str) -> bool:
@@ -116,3 +118,177 @@ def formatar_cnpj(cnpj: str) -> str:
     if len(cnpj_limpo) != 14:
         return cnpj
     return f"{cnpj_limpo[:2]}.{cnpj_limpo[2:5]}.{cnpj_limpo[5:8]}/{cnpj_limpo[8:12]}-{cnpj_limpo[12:]}"
+
+
+def validate_email(email: str) -> bool:
+    """
+    Valida formato de email
+
+    Args:
+        email: Email a ser validado
+
+    Returns:
+        True se válido, False caso contrário
+    """
+    if not email:
+        return False
+
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email))
+
+
+def validate_password_strength(password: str) -> Tuple[bool, Optional[str]]:
+    """
+    Valida força da senha
+
+    Requisitos:
+    - Mínimo 8 caracteres
+    - Pelo menos 1 letra maiúscula
+    - Pelo menos 1 letra minúscula
+    - Pelo menos 1 número
+    - Pelo menos 1 caractere especial
+
+    Args:
+        password: Senha a ser validada
+
+    Returns:
+        Tupla (is_valid, error_message)
+    """
+    if not password:
+        return False, "Senha não pode estar vazia"
+
+    if len(password) < 8:
+        return False, "Senha deve ter no mínimo 8 caracteres"
+
+    if not re.search(r'[A-Z]', password):
+        return False, "Senha deve conter pelo menos uma letra maiúscula"
+
+    if not re.search(r'[a-z]', password):
+        return False, "Senha deve conter pelo menos uma letra minúscula"
+
+    if not re.search(r'\d', password):
+        return False, "Senha deve conter pelo menos um número"
+
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return False, "Senha deve conter pelo menos um caractere especial"
+
+    return True, None
+
+
+def validate_phone(phone: str) -> bool:
+    """
+    Valida telefone brasileiro (com ou sem formatação)
+
+    Aceita:
+    - Fixo: (11) 3333-4444
+    - Celular: (11) 99999-8888
+    - Com código do país: +55 11 99999-8888
+
+    Args:
+        phone: Telefone a ser validado
+
+    Returns:
+        True se válido, False caso contrário
+    """
+    if not phone:
+        return False
+
+    # Remove formatação
+    phone_clean = re.sub(r'[^0-9]', '', phone)
+
+    # Remove código do país se presente (+55)
+    if phone_clean.startswith('55') and len(phone_clean) > 11:
+        phone_clean = phone_clean[2:]
+
+    # Verifica se tem 10 ou 11 dígitos (fixo ou celular)
+    if len(phone_clean) not in [10, 11]:
+        return False
+
+    # Verifica se DDD é válido (11-99)
+    try:
+        ddd = int(phone_clean[:2])
+        if ddd < 11 or ddd > 99:
+            return False
+    except ValueError:
+        return False
+
+    return True
+
+
+def sanitize_string(value: str, max_length: int = 500) -> str:
+    """
+    Sanitiza string removendo caracteres perigosos
+
+    Remove:
+    - Tags HTML
+    - Caracteres de controle
+    - SQL injection patterns básicos
+
+    Args:
+        value: String a ser sanitizada
+        max_length: Tamanho máximo permitido
+
+    Returns:
+        String sanitizada
+    """
+    if not value:
+        return ""
+
+    # Limita tamanho
+    value = value[:max_length]
+
+    # Remove tags HTML
+    value = re.sub(r'<[^>]*>', '', value)
+
+    # Remove caracteres de controle
+    value = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', value)
+
+    # Remove padrões SQL básicos (proteção adicional ao SQLAlchemy)
+    dangerous_patterns = [
+        r'(\bDROP\b|\bDELETE\b|\bTRUNCATE\b|\bEXEC\b|\bEXECUTE\b)',
+        r'(--|;|/\*|\*/)',
+        r'(\bUNION\b.*\bSELECT\b)',
+    ]
+
+    for pattern in dangerous_patterns:
+        value = re.sub(pattern, '', value, flags=re.IGNORECASE)
+
+    return value.strip()
+
+
+def validate_subdomain(subdomain: str) -> Tuple[bool, Optional[str]]:
+    """
+    Valida formato de subdomínio
+
+    Requisitos:
+    - Apenas letras minúsculas, números e hífens
+    - Não pode começar ou terminar com hífen
+    - Entre 3 e 50 caracteres
+
+    Args:
+        subdomain: Subdomínio a ser validado
+
+    Returns:
+        Tupla (is_valid, error_message)
+    """
+    if not subdomain:
+        return False, "Subdomínio não pode estar vazio"
+
+    if len(subdomain) < 3:
+        return False, "Subdomínio deve ter no mínimo 3 caracteres"
+
+    if len(subdomain) > 50:
+        return False, "Subdomínio deve ter no máximo 50 caracteres"
+
+    if not re.match(r'^[a-z0-9-]+$', subdomain):
+        return False, "Subdomínio deve conter apenas letras minúsculas, números e hífens"
+
+    if subdomain.startswith('-') or subdomain.endswith('-'):
+        return False, "Subdomínio não pode começar ou terminar com hífen"
+
+    # Subdomínios reservados
+    reserved = ['admin', 'api', 'www', 'mail', 'ftp', 'localhost', 'legia', 'system']
+    if subdomain in reserved:
+        return False, f"Subdomínio '{subdomain}' é reservado"
+
+    return True, None

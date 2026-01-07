@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text, func
 from fastapi import HTTPException, status
 
+from app.utils.tenant_schema import validate_schema_name
 from app.schemas.process import (
     ProcessCreate,
     ProcessUpdate,
@@ -26,7 +27,7 @@ class ProcessService:
         """
         Busca processo por ID
         """
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
 
         result = db.execute(
             text(f"""
@@ -57,7 +58,7 @@ class ProcessService:
         """
         Lista processos com filtros
         """
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
 
         # Construir WHERE clause
         where_clauses = []
@@ -116,7 +117,7 @@ class ProcessService:
         """
         Cria novo processo
         """
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
 
         # Verificar se cliente existe
         client_result = db.execute(
@@ -192,7 +193,7 @@ class ProcessService:
         """
         Atualiza processo
         """
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
 
         # Verificar se processo existe
         existing = db.execute(
@@ -300,7 +301,7 @@ class ProcessService:
         """
         Deleta processo
         """
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
 
         # Verificar se existe
         existing = db.execute(
@@ -331,7 +332,7 @@ class ProcessService:
         """
         Retorna estatísticas de processos
         """
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
 
         result = db.execute(
             text(f"""

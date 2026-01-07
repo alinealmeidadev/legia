@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).parent))
 
 from sqlalchemy import text
 from app.db.session import SessionLocal
-from app.utils.tenant_schema import list_tenant_schemas
+from app.utils.tenant_schema import list_tenant_schemas, validate_schema_name
 
 
 def migrate_processes_table():
@@ -29,6 +29,9 @@ def migrate_processes_table():
         print()
 
         for schema_name in schemas:
+            # Validar schema_name para prevenir SQL injection
+            schema_name = validate_schema_name(schema_name)
+
             print(f"Migrando schema: {schema_name}")
 
             try:

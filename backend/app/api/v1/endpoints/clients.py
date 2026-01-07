@@ -15,6 +15,7 @@ from app.schemas.client import (
     ClientResponse,
     ClientListResponse
 )
+from app.utils.tenant_schema import validate_schema_name
 
 
 router = APIRouter()
@@ -35,7 +36,7 @@ def list_clients(
     **Acesso:** Usuário do tenant autenticado
     """
     user_dict, tenant = user_tenant
-    schema_name = tenant.schema_name
+    schema_name = validate_schema_name(tenant.schema_name)
 
     # Montar query
     where_clauses = []
@@ -93,7 +94,7 @@ def get_client(
     **Acesso:** Usuário do tenant autenticado
     """
     user_dict, tenant = user_tenant
-    schema_name = tenant.schema_name
+    schema_name = validate_schema_name(tenant.schema_name)
 
     result = db.execute(
         text(f"SELECT * FROM {schema_name}.clients WHERE id = :client_id"),
@@ -123,7 +124,7 @@ def create_client(
     **Acesso:** Usuário do tenant autenticado
     """
     user_dict, tenant = user_tenant
-    schema_name = tenant.schema_name
+    schema_name = validate_schema_name(tenant.schema_name)
 
     # Verificar se documento já existe
     existing = db.execute(
@@ -177,7 +178,7 @@ def update_client(
     **Acesso:** Usuário do tenant autenticado
     """
     user_dict, tenant = user_tenant
-    schema_name = tenant.schema_name
+    schema_name = validate_schema_name(tenant.schema_name)
 
     # Verificar se existe
     existing = db.execute(
@@ -238,7 +239,7 @@ def delete_client(
     **Acesso:** Admin do tenant apenas
     """
     user_dict, tenant = user_tenant
-    schema_name = tenant.schema_name
+    schema_name = validate_schema_name(tenant.schema_name)
 
     # Verificar se é admin
     if user_dict.get('role') != 'admin':
@@ -417,7 +418,7 @@ async def importar_excel(
     from app.services.excel_service import ExcelService
 
     user_dict, tenant = user_tenant
-    schema_name = tenant.schema_name
+    schema_name = validate_schema_name(tenant.schema_name)
 
     # Verificar tipo de arquivo
     if not arquivo.filename.endswith(('.xlsx', '.xls')):
@@ -470,7 +471,7 @@ def confirmar_importacao(
     **Acesso:** Usuário do tenant autenticado
     """
     user_dict, tenant = user_tenant
-    schema_name = tenant.schema_name
+    schema_name = validate_schema_name(tenant.schema_name)
 
     try:
         inseridos = 0

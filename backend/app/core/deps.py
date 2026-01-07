@@ -13,6 +13,7 @@ from app.db.session import SessionLocal
 from app.models.public.legia_user import LegiaUser
 from app.models.public.tenant import Tenant
 from app.schemas.auth import TokenPayload
+from app.utils.tenant_schema import validate_schema_name
 
 
 # OAuth2 scheme para extrair token do header Authorization
@@ -168,7 +169,7 @@ def get_current_tenant_user(
     from app.models.tenant.user import TenantUser
 
     # Buscar usuário no schema do tenant
-    schema_name = tenant.schema_name
+    schema_name = validate_schema_name(tenant.schema_name)
 
     # Usar raw SQL para consultar no schema correto
     from sqlalchemy import text

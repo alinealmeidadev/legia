@@ -1,11 +1,30 @@
 """
 LEGIA PLATFORM - Utilitário para gerenciar schemas de tenants
 """
+import re
 from sqlalchemy import text, inspect
 from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.session import SessionLocal
+
+
+def validate_schema_name(schema_name: str) -> str:
+    """
+    Valida e sanitiza nome de schema para prevenir SQL injection
+
+    Args:
+        schema_name: Nome do schema a validar
+
+    Returns:
+        Schema name validado
+
+    Raises:
+        ValueError: Se o schema name for inválido
+    """
+    if not re.match(r'^tenant_\d+$', schema_name):
+        raise ValueError(f"Schema name inválido: {schema_name}")
+    return schema_name
 
 
 def create_tenant_schema(tenant_id: int, db: Session = None) -> bool:
@@ -25,7 +44,7 @@ def create_tenant_schema(tenant_id: int, db: Session = None) -> bool:
         close_db = True
 
     try:
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
 
         # Criar schema
         db.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema_name}"))
@@ -255,7 +274,7 @@ def drop_tenant_schema(tenant_id: int, db: Session = None) -> bool:
         close_db = True
 
     try:
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
         db.execute(text(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE"))
         db.commit()
 

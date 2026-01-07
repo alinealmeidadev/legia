@@ -8,6 +8,14 @@ Create Date: 2025-12-19 08:00:00.000000
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import text
+import re
+
+
+def validate_schema_name(schema_name: str) -> str:
+    """Valida schema_name para prevenir SQL injection"""
+    if not re.match(r'^tenant_\d+$', schema_name):
+        raise ValueError(f"Schema name inválido: {schema_name}")
+    return schema_name
 
 
 # revision identifiers, used by Alembic.
@@ -29,7 +37,7 @@ def upgrade() -> None:
     tenant_ids = [row[0] for row in result]
 
     for tenant_id in tenant_ids:
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
 
         # Verificar se a tabela existe
         table_exists = conn.execute(text(f"""
@@ -162,6 +170,6 @@ def downgrade() -> None:
     tenant_ids = [row[0] for row in result]
 
     for tenant_id in tenant_ids:
-        schema_name = f"tenant_{tenant_id}"
+        schema_name = validate_schema_name(f"tenant_{tenant_id}")
         conn.execute(text(f"DROP TABLE IF EXISTS {schema_name}.processes CASCADE"))
         print(f"✅ Tabela processes removida do schema {schema_name}")

@@ -1,7 +1,7 @@
 """
 LEGIA PLATFORM - Serviço de Autenticação
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -94,7 +94,7 @@ class AuthService:
         refresh_token = create_refresh_token(token_data)
 
         # Atualizar último login
-        user.last_login_at = datetime.utcnow()
+        user.last_login_at = datetime.now(timezone.utc)
         db.commit()
 
         return LoginResponse(
@@ -211,7 +211,7 @@ class AuthService:
                 SET last_login_at = :now
                 WHERE id = :user_id
             """),
-            {"now": datetime.utcnow(), "user_id": user_dict['id']}
+            {"now": datetime.now(timezone.utc), "user_id": user_dict['id']}
         )
         db.commit()
 
@@ -345,7 +345,7 @@ class AuthService:
             phone=register_data.phone,
             plan_id=register_data.plan_id,
             status="trial",
-            trial_ends_at=datetime.utcnow() + timedelta(days=14)  # 14 dias de trial
+            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=14)  # 14 dias de trial
         )
 
         db.add(tenant)

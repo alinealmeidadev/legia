@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
+from app.utils.tenant_schema import validate_schema_name
 
 # Engine do PostgreSQL
 engine = create_engine(
@@ -41,6 +42,9 @@ def set_tenant_schema(db: Session, schema_name: str) -> None:
         db: Sessão do SQLAlchemy
         schema_name: Nome do schema (ex: tenant_001, tenant_002)
     """
+    # Validar schema_name para prevenir SQL injection
+    schema_name = validate_schema_name(schema_name)
+
     # Define search_path para o schema do tenant + public (fallback)
     db.execute(text(f"SET search_path TO {schema_name}, public"))
     db.commit()
