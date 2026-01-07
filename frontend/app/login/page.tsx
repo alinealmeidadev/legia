@@ -110,11 +110,14 @@ export default function LoginPage() {
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
 
-            <div className="text-xs text-center text-muted-foreground mt-4">
-              <p className="mb-1"><strong>Super Admin:</strong> admin@legia.com / Admin@123</p>
-              <p><strong>Tenant ABC (ID 1):</strong> admin@abc.com / admin123</p>
-              <p><strong>Tenant XYZ (ID 2):</strong> admin@xyz.com / admin123</p>
-            </div>
+            {/* CREDENCIAIS REMOVIDAS POR SEGURANÇA
+                 Em desenvolvimento, consulte a documentação ou .env */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="text-xs text-center text-muted-foreground mt-4">
+                <p className="text-yellow-600">⚠️ Ambiente de desenvolvimento</p>
+                <p>Consulte CLAUDE.md para credenciais de teste</p>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>

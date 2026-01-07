@@ -37,8 +37,8 @@ class Settings(BaseSettings):
     ASAAS_SANDBOX: bool = True
     ASAAS_BASE_URL: str = "https://sandbox.asaas.com/api/v3"
 
-    # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000,https://legia-git-main-aline-almeidas-projects.vercel.app,https://legia-aline-almeidas-projects.vercel.app,https://legia.vercel.app,https://*.vercel.app,https://legia-backend.onrender.com"
+    # CORS - REMOVIDO *.vercel.app POR SEGURANÇA (muito permissivo)
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000,https://legia-git-main-aline-almeidas-projects.vercel.app,https://legia-aline-almeidas-projects.vercel.app,https://legia.vercel.app,https://legia-backend.onrender.com"
 
     @property
     def cors_origins_list(self) -> List[str]:
@@ -68,9 +68,9 @@ class Settings(BaseSettings):
     # Timezone
     TZ: str = "America/Sao_Paulo"
 
-    # Superadmin padrão (primeiro acesso)
-    FIRST_SUPERUSER_EMAIL: str = "admin@legia.com.br"
-    FIRST_SUPERUSER_PASSWORD: str = "admin123"  # Mudar no primeiro login!
+    # Superadmin padrão (primeiro acesso) - DEVE VIR DO .env EM PRODUÇÃO
+    FIRST_SUPERUSER_EMAIL: str
+    FIRST_SUPERUSER_PASSWORD: str  # NUNCA use senha padrão em produção!
     FIRST_SUPERUSER_NAME: str = "Admin Legia"
 
     class Config:

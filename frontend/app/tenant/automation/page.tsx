@@ -82,7 +82,7 @@ export default function AutomationPage() {
 
   const fetchClients = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');  // CORRIGIDO: usar 'access_token' padrão
       const response = await fetch('https://legia-backend.onrender.com/api/v1/clients/', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -166,7 +166,7 @@ export default function AutomationPage() {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');  // CORRIGIDO: usar 'access_token' padrão
 
       // ========================================
       // PASSO 1: CRIAR PROCESSO
@@ -180,7 +180,7 @@ export default function AutomationPage() {
         description: processDescription || `Processo de ${selectedType.title}`,
         priority: priority,
         deadline_days: parseInt(deadline),
-        contract_changes: selectedOptions // Array de alterações selecionadas
+        alteration_types: selectedOptions // Array de alterações selecionadas
       };
 
       console.log('Payload do processo:', processPayload);

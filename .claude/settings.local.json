@@ -51,7 +51,9 @@
       "Bash(code .)",
       "Bash(.venvScriptspython.exe migrate_add_fields.py)",
       "Bash(npm run build:*)",
-      "Bash(rd /s /q .next)"
+      "Bash(rd /s /q .next)",
+      "Bash(docker --version:*)",
+      "Bash(docker-compose:*)"
     ]
   }
 }
