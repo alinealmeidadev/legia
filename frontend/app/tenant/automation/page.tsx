@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Building2, FileText, XCircle, Loader2 } from 'lucide-react';
+import api from '@/lib/api';
 
 // ========================================
 // TIPOS DE PROCESSO DISPONÍVEIS
@@ -82,17 +83,8 @@ export default function AutomationPage() {
 
   const fetchClients = async () => {
     try {
-      const token = localStorage.getItem('access_token');  // CORRIGIDO: usar 'access_token' padrão
-      const response = await fetch('https://legia-backend.onrender.com/api/v1/clients/', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setClients(data);
-      }
+      const response = await api.get('/clients/');
+      setClients(response.data);
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);
       toast({
@@ -166,13 +158,11 @@ export default function AutomationPage() {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('access_token');  // CORRIGIDO: usar 'access_token' padrão
-
       // ========================================
       // PASSO 1: CRIAR PROCESSO
       // ========================================
       console.log('📝 Criando processo...');
-      
+
       const processPayload = {
         client_id: parseInt(selectedClient),
         process_type: selectedType.id,
@@ -185,21 +175,8 @@ export default function AutomationPage() {
 
       console.log('Payload do processo:', processPayload);
 
-      const processResponse = await fetch('https://legia-backend.onrender.com/api/v1/processes/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(processPayload)
-      });
-
-      if (!processResponse.ok) {
-        const errorData = await processResponse.json();
-        throw new Error(errorData.detail || 'Erro ao criar processo');
-      }
-
-      const process = await processResponse.json();
+      const processResponse = await api.post('/processes/', processPayload);
+      const process = processResponse.data;
       console.log('✅ Processo criado:', process);
 
       // Validar que processo tem ID
@@ -219,21 +196,8 @@ export default function AutomationPage() {
 
       console.log('Payload do workflow:', workflowPayload);
 
-      const workflowResponse = await fetch('https://legia-backend.onrender.com/api/v1/workflows/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(workflowPayload)
-      });
-
-      if (!workflowResponse.ok) {
-        const errorData = await workflowResponse.json();
-        throw new Error(errorData.detail || 'Erro ao criar workflow');
-      }
-
-      const workflow = await workflowResponse.json();
+      const workflowResponse = await api.post('/workflows/', workflowPayload);
+      const workflow = workflowResponse.data;
       console.log('✅ Workflow criado:', workflow);
 
       // Validar que workflow tem ID e stages
